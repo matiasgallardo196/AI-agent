@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import readXlsxFile from 'read-excel-file/node';
 import * as path from 'path';
 

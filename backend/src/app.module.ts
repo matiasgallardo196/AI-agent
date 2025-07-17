@@ -5,6 +5,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { CartsModule } from './modules/carts/carts.module';
 import { OpenaiModule } from './modules/openai/openai.module';
 import { IntentDetectionModule } from './modules/intent-detection/intent-detection.module';
+import { PrismaModule } from 'prisma/prisma.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { IntentDetectionModule } from './modules/intent-detection/intent-detecti
     CartsModule,
     OpenaiModule,
     IntentDetectionModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [],
