@@ -1,16 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
+import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
+  constructor(private readonly productsService: ProductsService) {}
   @Get()
-  getProducts() {
-    // Aquí iría la lógica para obtener los productos
-    return 'Lista de productos';
+  async getProducts() {
+    return await this.productsService.getAllProducts();
   }
 
   @Get(':id')
-  getProductById() {
-    // Aquí iría la lógica para obtener un producto por ID
-    return 'Producto por ID';
+  async getProductById(@Param('id') id: number) {
+    return await this.productsService.getProductById(Number(id));
   }
 }
