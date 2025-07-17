@@ -1,16 +1,20 @@
-import { Controller, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
+import { CartsService } from './carts.service';
 
 @Controller('carts')
 export class CartsController {
+  constructor(private readonly cartsService: CartsService) {}
+
   @Post()
-  createCart() {
-    // Aquí iría la lógica para crear un carrito
-    return 'Carrito creado';
+  createCart(@Body('items') items: { product_id: number; qty: number }[]) {
+    return this.cartsService.createCart(items);
   }
 
   @Patch(':id')
-  updateCart() {
-    // Aquí iría la lógica para actualizar un carrito por ID
-    return 'Carrito actualizado';
+  updateCart(
+    @Param('id') cartId: number,
+    @Body('items') items: { product_id: number; qty: number }[],
+  ) {
+    return this.cartsService.updateCartItems(Number(cartId), items);
   }
 }
