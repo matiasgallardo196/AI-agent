@@ -1,16 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'prisma/prisma.service';
+import { ProductsRepository } from './products.repository';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly productsRepository: ProductsRepository) {}
+
   async getAllProducts() {
-    return this.prisma.product.findMany();
+    return this.productsRepository.findAll();
   }
 
   async getProductById(id: number) {
-    return this.prisma.product.findUnique({
-      where: { id },
-    });
+    return this.productsRepository.findById(id);
   }
 }
