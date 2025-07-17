@@ -1,10 +1,20 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { MessageModule } from './modules/message/message.module';
+import { ProductsModule } from './modules/products/products.module';
+import { CartsModule } from './modules/carts/carts.module';
+import { OpenaiModule } from './modules/openai/openai.module';
+import { IntentDetectionModule } from './modules/intent-detection/intent-detection.module';
 
 @Module({
-  imports: [],
+  imports: [
+    MessageModule,
+    ProductsModule,
+    CartsModule,
+    OpenaiModule,
+    IntentDetectionModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}
