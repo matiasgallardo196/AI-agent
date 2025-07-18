@@ -13,6 +13,13 @@ export class CartsRepository {
     return products.map((p) => p.id);
   }
 
+  async findProductsByIds(ids: number[]) {
+    return this.prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, stock: true },
+    });
+  }
+
   async createCart(items: { product_id: number; qty: number }[]) {
     return this.prisma.cart.create({
       data: {
@@ -30,6 +37,31 @@ export class CartsRepository {
   async findCartItem(cartId: number, productId: number) {
     return this.prisma.cartItem.findFirst({
       where: { cartId, productId },
+    });
+  }
+
+  async createCartAndUpdateStock(items: { product_id: number; qty: number }[]) {
+    return this.prisma.$transaction(async (tx) => {
+      const cart = await tx.cart.create({
+        data: {
+          items: {
+            create: items.map(({ product_id, qty }) => ({
+              product: { connect: { id: product_id } },
+              qty,
+            })),
+          },
+        },
+        include: { items: { include: { product: true } } },
+      });
+
+      for (const { product_id, qty } of items) {
+        await tx.product.update({
+          where: { id: product_id },
+          data: { stock: { decrement: qty } },
+        });
+      }
+
+      return cart;
     });
   }
 

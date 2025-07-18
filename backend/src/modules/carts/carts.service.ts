@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CartsRepository } from './carts.repository';
 
 @Injectable()
@@ -7,18 +11,26 @@ export class CartsService {
 
   async createCart(items: { product_id: number; qty: number }[]) {
     const productIds = items.map((i) => i.product_id);
-    const existingIds = new Set(
-      await this.cartsRepository.findExistingProductIds(productIds),
-    );
+    const products = await this.cartsRepository.findProductsByIds(productIds);
+    const productMap = new Map(products.map((p) => [p.id, p]));
 
-    const notFound = productIds.filter((id) => !existingIds.has(id));
+    const notFound = productIds.filter((id) => !productMap.has(id));
     if (notFound.length > 0) {
       throw new NotFoundException(
         `Productos no encontrados: ${notFound.join(', ')}`,
       );
     }
 
-    return this.cartsRepository.createCart(items);
+    for (const item of items) {
+      const product = productMap.get(item.product_id);
+      if (product && product.stock < item.qty) {
+        throw new BadRequestException(
+          `Stock insuficiente para el producto ${item.product_id}`,
+        );
+      }
+    }
+
+    return this.cartsRepository.createCartAndUpdateStock(items);
   }
 
   async updateCartItems(
