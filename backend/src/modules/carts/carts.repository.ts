@@ -5,18 +5,9 @@ import { PrismaService } from 'prisma/prisma.service';
 export class CartsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findExistingProductIds(ids: number[]) {
-    const products = await this.prisma.product.findMany({
-      where: { id: { in: ids } },
-      select: { id: true },
-    });
-    return products.map((p) => p.id);
-  }
-
   async findProductsByIds(ids: number[]) {
     return this.prisma.product.findMany({
       where: { id: { in: ids } },
-      select: { id: true, stock: true },
     });
   }
 
@@ -24,9 +15,9 @@ export class CartsRepository {
     return this.prisma.cart.create({
       data: {
         items: {
-          create: items.map(({ product_id, qty }) => ({
-            product: { connect: { id: product_id } },
-            qty,
+          create: items.map((item) => ({
+            product: { connect: { id: item.product_id } },
+            qty: item.qty,
           })),
         },
       },
@@ -34,66 +25,57 @@ export class CartsRepository {
     });
   }
 
-  async findCartItem(cartId: number, productId: number) {
-    return this.prisma.cartItem.findFirst({
-      where: { cartId, productId },
-    });
-  }
-
-  async createCartAndUpdateStock(items: { product_id: number; qty: number }[]) {
+  async updateCartItemsTransactional(
+    cartId: number,
+    items: { product_id: number; qty: number }[],
+  ) {
     return this.prisma.$transaction(async (tx) => {
-      const cart = await tx.cart.create({
-        data: {
-          items: {
-            create: items.map(({ product_id, qty }) => ({
-              product: { connect: { id: product_id } },
-              qty,
-            })),
-          },
+      await tx.cartItem.deleteMany({
+        where: {
+          cartId,
+          productId: { notIn: items.map((item) => item.product_id) },
         },
-        include: { items: { include: { product: true } } },
       });
 
-      for (const { product_id, qty } of items) {
-        await tx.product.update({
-          where: { id: product_id },
-          data: { stock: { decrement: qty } },
+      for (const item of items) {
+        const existing = await tx.cartItem.findFirst({
+          where: {
+            cartId,
+            productId: item.product_id,
+          },
         });
+
+        if (existing) {
+          await tx.cartItem.update({
+            where: { id: existing.id },
+            data: { qty: item.qty },
+          });
+        } else {
+          await tx.cartItem.create({
+            data: {
+              cartId,
+              productId: item.product_id,
+              qty: item.qty,
+            },
+          });
+        }
       }
 
-      return cart;
+      return tx.cart.findUnique({
+        where: { id: cartId },
+        include: { items: { include: { product: true } } },
+      });
     });
   }
 
-  async updateCartItem(id: number, qty: number) {
-    return this.prisma.cartItem.update({
-      where: { id },
-      data: { qty },
-    });
-  }
-
-  async deleteCartItem(id: number) {
-    return this.prisma.cartItem.delete({ where: { id } });
-  }
-
-  async createCartItem(cartId: number, productId: number, qty: number) {
-    return this.prisma.cartItem.create({
-      data: {
-        cart: { connect: { id: cartId } },
-        product: { connect: { id: productId } },
-        qty,
-      },
-    });
-  }
-
-  async getCartById(cartId: number) {
-    return this.prisma.cart.findUnique({
-      where: { id: cartId },
-      include: {
-        items: {
-          include: { product: true },
-        },
-      },
-    });
+  async decrementStock(items: { product_id: number; qty: number }[]) {
+    return this.prisma.$transaction(
+      items.map((item) =>
+        this.prisma.product.update({
+          where: { id: item.product_id },
+          data: { stock: { decrement: item.qty } },
+        }),
+      ),
+    );
   }
 }
