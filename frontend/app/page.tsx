@@ -11,6 +11,16 @@ interface Message {
   timestamp: Date;
 }
 
+let sessionId: string | null = null;
+
+if (typeof window !== "undefined") {
+  sessionId = localStorage.getItem("sessionId");
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem("sessionId", sessionId);
+  }
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -45,7 +55,10 @@ export default function ChatPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message: userMessage.text }),
+          body: JSON.stringify({
+            message: userMessage.text,
+            sessionId,
+          }),
         }
       );
 
