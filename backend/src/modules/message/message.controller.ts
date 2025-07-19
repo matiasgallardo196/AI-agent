@@ -5,7 +5,11 @@ import { MessageService } from './message.service';
 export class MessageController {
   constructor(private readonly messageService: MessageService) {}
   @Post()
-  async handleMessage(@Body() body: { message: string }) {
-    return await this.messageService.processUserMessage(body.message);
+  async handleMessage(@Body() body: { message: string; sessionId?: string }) {
+    const response = await this.messageService.processUserMessage(
+      body.message,
+      body.sessionId,
+    );
+    return { response };
   }
 }
