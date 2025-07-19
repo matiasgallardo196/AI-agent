@@ -65,12 +65,19 @@ export class OpenAiService {
     intention: string;
     userMessage?: string;
   }): string {
-    const summary = Array.isArray(data)
-      ? data
+    // Remove heavy fields like embeddings that bloat the prompt
+    const cleaned = JSON.parse(
+      JSON.stringify(data, (key, value) =>
+        key === 'embedding' || key === 'score' ? undefined : value,
+      ),
+    );
+
+    const summary = Array.isArray(cleaned)
+      ? cleaned
           .map((p, i) => `${i + 1}. ${p.name} - $${p.price} - ${p.description}`)
           .slice(0, 10)
           .join('\n')
-      : JSON.stringify(data, null, 2);
+      : JSON.stringify(cleaned, null, 2);
 
     switch (intention) {
       case 'get_products':
