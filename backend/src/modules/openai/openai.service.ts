@@ -5,7 +5,14 @@ import OpenAI from 'openai';
 export class OpenAiService {
   private readonly apiKey = process.env.OPENAI_API_KEY;
   private readonly model = 'gpt-3.5-turbo'; // o 'gpt-4'
-  private readonly client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  private readonly client: OpenAI;
+
+  constructor() {
+    if (!this.apiKey) {
+      throw new Error('OPENAI_API_KEY no definido');
+    }
+    this.client = new OpenAI({ apiKey: this.apiKey });
+  }
 
   // Método general: recibe prompt y devuelve string plano
   async askRaw(prompt: string): Promise<string> {
@@ -36,33 +43,16 @@ export class OpenAiService {
     intention: string;
     userMessage?: string;
   }): Promise<string> {
-    const { data, intention, userMessage } = params;
-
-    // 1. Limpiar los productos para no enviar campos innecesarios como "embedding"
-    const summary = Array.isArray(data)
-      ? data
-          .map((p, i) => `${i + 1}. ${p.name} - $${p.price} - ${p.description}`)
-          .slice(0, 10) // Limitar por si son muchos
-          .join('\n')
-      : JSON.stringify(data, null, 2);
-
-    // 2. Crear prompt seguro
-    const prompt = `
-El usuario quiere ${intention === 'get_products' ? 'ver productos' : 'realizar una acción'}.
-
-Mostrale esta respuesta clara y amigable:
-
-${summary}
-
-Redactá la respuesta como si fueras un asistente humano.
-`;
+    const prompt = this.buildPrompt(params);
 
     try {
       const response = await this.askRaw(prompt);
       return response;
     } catch (err) {
       console.error('❌ Error en rephraseForUser:', err.message || err);
-      return 'Estos son los productos que encontré:\n' + summary;
+      return Array.isArray(params.data)
+        ? params.data.map((p) => p.name).join(', ')
+        : JSON.stringify(params.data);
     }
   }
 
@@ -75,41 +65,26 @@ Redactá la respuesta como si fueras un asistente humano.
     intention: string;
     userMessage?: string;
   }): string {
+    const summary = Array.isArray(data)
+      ? data
+          .map((p, i) => `${i + 1}. ${p.name} - $${p.price} - ${p.description}`)
+          .slice(0, 10)
+          .join('\n')
+      : JSON.stringify(data, null, 2);
+
     switch (intention) {
       case 'get_products':
-        return `
-Eres un agente comercial amable. El usuario pidió ver productos. Reformula esta información para mostrarla de forma clara y atractiva:
-
-${JSON.stringify(data, null, 2)}
-`;
+        return `Eres un agente comercial amable. El usuario pidió ver productos. Reformula esta información de forma clara y atractiva:\n\n${summary}`;
 
       case 'create_cart':
-        return `
-El usuario acaba de crear un carrito con estos productos:
-
-${JSON.stringify(data.items, null, 2)}
-
-Confirma la creación de forma amistosa.
-`;
+        return `El usuario acaba de crear un carrito con estos productos:\n\n${summary}\nConfirma la creación de forma amistosa.`;
 
       case 'update_cart':
-        return `
-El usuario modificó su carrito. Los productos ahora son:
-
-${JSON.stringify(data.items, null, 2)}
-
-Confirma los cambios de forma clara.
-`;
+        return `El usuario modificó su carrito. Los productos ahora son:\n\n${summary}\nConfirma los cambios de forma clara.`;
 
       case 'fallback':
       default:
-        return `
-Eres un agente comercial amigable. El usuario escribió:
-
-"${userMessage}"
-
-No pudiste detectar una intención clara. Intenta responder amablemente como si fueras humano, sin ejecutar acciones.
-`;
+        return `Eres un agente comercial amigable. El usuario escribió: "${userMessage}". Formula una pregunta aclaratoria para entender mejor su intención.`;
     }
   }
 

@@ -1,31 +1,25 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { OpenAiService } from '../openai/openai.service';
+import { IntentName, VALID_INTENTS } from './intents';
 
 @Injectable()
 export class IntentDetectionService {
   constructor(private readonly openaiService: OpenAiService) {}
 
-  async detectIntent(text: string): Promise<{ name: string }> {
-    // Prompt estructurado para que el LLM responda con una intención
-    const prompt = `
-Eres un agente de atención al cliente. Recibiste el siguiente mensaje:
+  async detectIntent(text: string): Promise<{ name: IntentName }> {
+    const prompt =
+      `Recibiste el mensaje del usuario: "${text}".\n` +
+      `Responde SOLAMENTE con un JSON que tenga los campos \`intent\` y \`query\`.\n` +
+      `Las intenciones válidas son: ${VALID_INTENTS.join(', ')}.\n` +
+      `Si no entiendes la intención usa \"${IntentName.Fallback}\" y deja query en null.`;
 
-"${text}"
-
-Clasifica este mensaje en una de las siguientes intenciones:
-- get_products
-- get_product (detalle)
-- create_cart
-- update_cart
-- fallback (no es una intención válida)
-
-Responde solo con el nombre de la intención. No agregues explicación.
-`;
-
-    const response = await this.openaiService.askRaw(prompt);
-    // Extraer y normalizar intención
-    const name = this.normalizeIntent(response);
-    return { name };
+    const raw = await this.openaiService.askRaw(prompt);
+    try {
+      const parsed = JSON.parse(raw);
+      return { name: this.normalizeIntent(parsed.intent) };
+    } catch {
+      return { name: IntentName.Fallback };
+    }
   }
 
   async extractQuery(text: string): Promise<string | null> {
@@ -46,15 +40,11 @@ Responde solo con el texto extraído o "null", sin explicación.
     return cleaned === 'null' ? null : cleaned;
   }
 
-  normalizeIntent(raw: string): string {
+  normalizeIntent(raw: string): IntentName {
     const lower = raw.trim().toLowerCase();
-    const validIntents = [
-      'get_products',
-      'get_product',
-      'create_cart',
-      'update_cart',
-    ];
-    return validIntents.includes(lower) ? lower : 'fallback';
+    return (VALID_INTENTS as string[]).includes(lower)
+      ? (lower as IntentName)
+      : IntentName.Fallback;
   }
 
   // (Opcional) Extraer ítems para crear carrito desde el mensaje
