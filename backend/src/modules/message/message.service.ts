@@ -21,7 +21,11 @@ export class MessageService {
     //2. Según la intención, decidir si es relevante
     switch (intent.name) {
       case 'get_products':
-        const products = await this.productsService.getAllProducts();
+        const query = await this.intentDetectionService.extractQuery(text);
+        const products = query
+          ? await this.productsService.searchProductsSemantic(query)
+          : await this.productsService.getAllProducts();
+        console.log('Products found:', products);
         return this.openaiService.rephraseForUser({
           data: products,
           intention: intent.name,

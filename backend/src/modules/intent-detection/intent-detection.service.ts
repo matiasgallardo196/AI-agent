@@ -28,6 +28,24 @@ Responde solo con el nombre de la intención. No agregues explicación.
     return { name };
   }
 
+  async extractQuery(text: string): Promise<string | null> {
+    const prompt = `
+Recibiste el siguiente mensaje del cliente:
+
+"${text}"
+
+Si el mensaje menciona un producto, categoría, ingrediente o descripción relevante (como "empanadas", "con queso", "algo con jamón"), extrae solo esas palabras clave para una búsqueda.
+
+Si no hay nada útil para buscar, responde solo con: null
+
+Responde solo con el texto extraído o "null", sin explicación.
+  `;
+
+    const result = await this.openaiService.askRaw(prompt);
+    const cleaned = result.trim().toLowerCase();
+    return cleaned === 'null' ? null : cleaned;
+  }
+
   normalizeIntent(raw: string): string {
     const lower = raw.trim().toLowerCase();
     const validIntents = [

@@ -6,7 +6,8 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
   @Get()
   async getProducts(@Query('q') query?: string) {
-    return await this.productsService.getAllProducts(query);
+    if (query) return this.productsService.searchProductsSemantic(query);
+    return await this.productsService.getAllProducts();
   }
 
   @Get(':id')

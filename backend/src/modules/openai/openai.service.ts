@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import OpenAI from 'openai';
 
 @Injectable()
 export class OpenAiService {
   private readonly apiKey = process.env.OPENAI_API_KEY;
-  private readonly model = 'gpt-4'; // o 'gpt-3.5-turbo'
+  private readonly model = 'gpt-3.5-turbo'; // o 'gpt-4'
+  private readonly client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   // Método general: recibe prompt y devuelve string plano
   async askRaw(prompt: string): Promise<string> {
@@ -32,13 +34,36 @@ export class OpenAiService {
   async rephraseForUser(params: {
     data: any;
     intention: string;
-    userMessage?: string; // útil para fallback
+    userMessage?: string;
   }): Promise<string> {
     const { data, intention, userMessage } = params;
 
-    const prompt = this.buildPrompt({ data, intention, userMessage });
+    // 1. Limpiar los productos para no enviar campos innecesarios como "embedding"
+    const summary = Array.isArray(data)
+      ? data
+          .map((p, i) => `${i + 1}. ${p.name} - $${p.price} - ${p.description}`)
+          .slice(0, 10) // Limitar por si son muchos
+          .join('\n')
+      : JSON.stringify(data, null, 2);
 
-    return await this.askRaw(prompt);
+    // 2. Crear prompt seguro
+    const prompt = `
+El usuario quiere ${intention === 'get_products' ? 'ver productos' : 'realizar una acción'}.
+
+Mostrale esta respuesta clara y amigable:
+
+${summary}
+
+Redactá la respuesta como si fueras un asistente humano.
+`;
+
+    try {
+      const response = await this.askRaw(prompt);
+      return response;
+    } catch (err) {
+      console.error('❌ Error en rephraseForUser:', err.message || err);
+      return 'Estos son los productos que encontré:\n' + summary;
+    }
   }
 
   private buildPrompt({
@@ -86,5 +111,13 @@ Eres un agente comercial amigable. El usuario escribió:
 No pudiste detectar una intención clara. Intenta responder amablemente como si fueras humano, sin ejecutar acciones.
 `;
     }
+  }
+
+  async generateEmbedding(text: string): Promise<number[]> {
+    const res = await this.client.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+    });
+    return res.data[0].embedding;
   }
 }
