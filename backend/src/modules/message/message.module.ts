@@ -9,9 +9,16 @@ import { ProductsModule } from '../products/products.module';
 import { IntentDetectionModule } from '../intent-detection/intent-detection.module';
 import { OpenAiModule } from '../openai/openai.module';
 import { CartsModule } from '../carts/carts.module';
+import { SessionManagerModule } from '../session-manager/session-manager.module';
 
 @Module({
-  imports: [ProductsModule, IntentDetectionModule, CartsModule, OpenAiModule],
+  imports: [
+    ProductsModule,
+    IntentDetectionModule,
+    CartsModule,
+    OpenAiModule,
+    SessionManagerModule,
+  ],
   controllers: [MessageController],
   providers: [MessageService],
   exports: [MessageService],

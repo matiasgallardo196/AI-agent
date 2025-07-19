@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
+import { ChatMessage } from '../../utils/chat-message.type';
 
 @Injectable()
 export class OpenAiService {
@@ -14,8 +15,7 @@ export class OpenAiService {
     this.client = new OpenAI({ apiKey: this.apiKey });
   }
 
-  // Método general: recibe prompt y devuelve string plano
-  async askRaw(prompt: string): Promise<string> {
+  async askChat(messages: ChatMessage[]): Promise<string> {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -24,7 +24,7 @@ export class OpenAiService {
       },
       body: JSON.stringify({
         model: this.model,
-        messages: [{ role: 'user', content: prompt }],
+        messages,
         temperature: 0.2,
       }),
     });
@@ -37,16 +37,25 @@ export class OpenAiService {
     return data.choices[0].message.content.trim();
   }
 
+  // Método general: recibe prompt y devuelve string plano
+  async askRaw(prompt: string): Promise<string> {
+    return this.askChat([{ role: 'user', content: prompt }]);
+  }
+
   // Método específico: transforma un resultado en una respuesta natural
   async rephraseForUser(params: {
     data: any;
     intention: string;
     userMessage?: string;
+    history?: ChatMessage[];
   }): Promise<string> {
     const prompt = this.buildPrompt(params);
 
     try {
-      const response = await this.askRaw(prompt);
+      const response = await this.askChat([
+        ...(params.history || []),
+        { role: 'user', content: prompt },
+      ]);
       return response;
     } catch (err) {
       console.error('❌ Error en rephraseForUser:', err.message || err);
