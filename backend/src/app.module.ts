@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { MessageModule } from './modules/message/message.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CartsModule } from './modules/carts/carts.module';
-import { OpenaiModule } from './modules/openai/openai.module';
+import { OpenAiModule } from './modules/openai/openai.module';
 import { IntentDetectionModule } from './modules/intent-detection/intent-detection.module';
 import { PrismaModule } from 'prisma/prisma.module';
 
@@ -12,7 +12,7 @@ import { PrismaModule } from 'prisma/prisma.module';
     MessageModule,
     ProductsModule,
     CartsModule,
-    OpenaiModule,
+    OpenAiModule,
     IntentDetectionModule,
     PrismaModule,
   ],

@@ -5,12 +5,21 @@ import { PrismaService } from 'prisma/prisma.service';
 export class ProductsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.product.findMany();
+  async findAll(query?: string) {
+    return this.prisma.product.findMany({
+      where: query
+        ? {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { description: { contains: query, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
+    });
   }
 
   async findById(id: number) {
-    return this.prisma.product.findUnique({
+    return await this.prisma.product.findUnique({
       where: { id },
     });
   }

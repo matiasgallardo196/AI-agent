@@ -5,11 +5,11 @@ import { ProductsRepository } from './products.repository';
 export class ProductsService {
   constructor(private readonly productsRepository: ProductsRepository) {}
 
-  async getAllProducts() {
-    return this.productsRepository.findAll();
+  async getAllProducts(query?: string) {
+    return await this.productsRepository.findAll(query);
   }
 
   async getProductById(id: number) {
-    return this.productsRepository.findById(id);
+    return await this.productsRepository.findById(id);
   }
 }
