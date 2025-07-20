@@ -36,6 +36,8 @@ export class MessageService {
 
   async processUserMessage(text: string, sessionId?: string) {
     const history = sessionId ? this.sessionManager.getMessages(sessionId) : [];
+    console.log(`Processing message: "${text}"`);
+    console.log('History for session:', history);
     const intent = await this.intentDetectionService.detectIntent(text, history);
     const updatedHistory: ChatMessage[] = [...history, { role: 'user', content: text }];
     if (sessionId) {
@@ -79,7 +81,7 @@ export class MessageService {
         .map((p, i) => `${i + 1}. ${p.name} (ID: ${p.id}) - ${p.description}`)
         .join('\n');
 
-      console.log('Product summary for session:', naturalContent);
+      //console.log('Product summary for session:', naturalContent);
 
       this.sessionManager.addMessage(sessionId, {
         role: 'assistant',
@@ -101,14 +103,18 @@ export class MessageService {
     history: ChatMessage[],
   ) {
     const items = await this.intentDetectionService.extractCartItems(text, history);
-    console.log('Items extracted for cart creation :', items);
+    //console.log('Items extracted for cart creation :', items);
     const cart = await this.cartsService.createCart(items);
-    console.log('Cart created:', cart);
-    console.log('Cart items:', cart.items);
-    //console.log('History for cart creation:', history);
-    if (sessionId) {
+    //console.log('Cart created:', cart);
+    if ('items' in cart) {
+      //console.log('Cart items:', cart.items);
+    } else if ('errors' in cart) {
+      console.log('Errores en el  carrito:', cart.errors);
+    } //console.log('History for cart creation:', history);
+    if (sessionId && 'id' in cart && 'items' in cart) {
       this.sessions.set(sessionId, cart.id);
     }
+
     return this.openaiService.rephraseForUser({
       data: cart,
       intention: IntentName.CreateCart,

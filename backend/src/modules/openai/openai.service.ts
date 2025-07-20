@@ -90,6 +90,36 @@ export class OpenAiService {
         return `Eres un agente comercial amable. El usuario pidió ver productos. Reformula esta información de forma clara y atractiva:\n\n${summary}`;
 
       case 'create_cart':
+        console.log('Creating cart with data:', cleaned);
+
+        // ⚠️ Caso: error por falta de stock
+        if ('errors' in cleaned && Array.isArray(cleaned.errors)) {
+          const errores = cleaned.errors
+            .map((err, i) => {
+              return `${i + 1}. ${err.name}: pediste ${err.cantidadSolicitada}, pero solo hay ${err.stockDisponible} disponibles.`;
+            })
+            .join('\n');
+
+          return `
+      Eres un agente comercial llamado Cristian. Estás ayudando al usuario dentro de un sistema de compras por chat.
+
+      No se pudo crear el carrito porque hay productos sin stock suficiente:
+
+      ${errores}
+
+      ¿Querés ajustar las cantidades para continuar con la creación del carrito?
+
+      Podés responder "sí" para usar la cantidad máxima disponible o indicar manualmente las nuevas cantidades.
+
+      Estoy aquí para ayudarte 😊
+    `.trim();
+        }
+
+        // ✅ Camino feliz: carrito válido con items
+        if (!Array.isArray(cleaned.items)) {
+          return `No se pudo crear el carrito porque no se encontraron productos válidos.`;
+        }
+
         const productLines = cleaned.items
           .map((item, i) => {
             const name = item.product?.name || `Producto desconocido (ID: ${item.productId})`;
@@ -107,19 +137,20 @@ export class OpenAiService {
 
         const totalLine =
           total > 0 ? `\n\nTotal estimado de la compra: $${total.toLocaleString()}` : '';
+
         return `
-                Eres un agente comercial amigable llamado Cristian. Estás ayudando al usuario dentro de un sistema de compras por chat.
+    Eres un agente comercial amigable llamado Cristian. Estás ayudando al usuario dentro de un sistema de compras por chat.
 
-                El usuario acaba de crear un carrito con los siguientes productos:
+    El usuario acaba de crear un carrito con los siguientes productos:
 
-                ${productLines}${totalLine}
+    ${productLines}${totalLine}
 
-                El número de carrito generado es: ${cleaned.id}.
+    El número de carrito generado es: ${cleaned.id}.
 
-                Confirma de forma amistosa la creación del carrito, incluyendo los nombres, cantidades y el total estimado.
-                Aclara que si más adelante desea modificar su carrito, puede hacerlo indicando el número de ID ${cleaned.id}.
-                Evita lenguaje técnico y hablá como un asesor humano, manteniendo el tono cálido y servicial de Cristian.
-                `.trim();
+    Confirma de forma amistosa la creación del carrito, incluyendo los nombres, cantidades y el total estimado.
+    Aclara que si más adelante desea modificar su carrito, puede hacerlo indicando el número de ID ${cleaned.id}.
+    Evita lenguaje técnico y hablá como un asesor humano, manteniendo el tono cálido y servicial de Cristian.
+  `.trim();
 
       case 'update_cart':
         return `El usuario modificó su carrito. Los productos ahora son:\n\n${summary}\nConfirma los cambios de forma clara.`;
