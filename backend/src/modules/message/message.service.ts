@@ -46,7 +46,7 @@ export class MessageService {
     }
     const handler = this.handlers[intent.name] ?? this.handleFallback.bind(this);
     console.log(`Detected intent: ${intent.name}`);
-    console.log('Updated history:', updatedHistory);
+    //console.log('Updated history:', updatedHistory);
     const response = await handler(text, sessionId, updatedHistory);
     if (sessionId) {
       this.sessionManager.addMessage(sessionId, {
@@ -59,7 +59,7 @@ export class MessageService {
 
   private async handleGetProducts(
     text: string,
-    _sessionId: string | undefined,
+    sessionId: string | undefined,
     history: ChatMessage[],
   ) {
     const query = await this.intentDetectionService.extractQuery(text, history);
@@ -68,6 +68,25 @@ export class MessageService {
       ? await this.productsService.searchProductsSemantic(query)
       : await this.productsService.getAllProducts();
     //console.log('Products found:', products);
+    if (sessionId) {
+      const productSummary = products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+      }));
+
+      const naturalContent = productSummary
+        .map((p, i) => `${i + 1}. ${p.name} (ID: ${p.id}) - ${p.description}`)
+        .join('\n');
+
+      console.log('Product summary for session:', naturalContent);
+
+      this.sessionManager.addMessage(sessionId, {
+        role: 'assistant',
+        content: `Aquí tienes una lista de productos disponibles:\n\n${naturalContent}`,
+      });
+    }
+
     return this.openaiService.rephraseForUser({
       data: products,
       intention: IntentName.GetProducts,
@@ -82,8 +101,11 @@ export class MessageService {
     history: ChatMessage[],
   ) {
     const items = await this.intentDetectionService.extractCartItems(text, history);
-    //console.log('Items extracted for cart creation:', items);
+    console.log('Items extracted for cart creation :', items);
     const cart = await this.cartsService.createCart(items);
+    console.log('Cart created:', cart);
+    console.log('Cart items:', cart.items);
+    //console.log('History for cart creation:', history);
     if (sessionId) {
       this.sessions.set(sessionId, cart.id);
     }

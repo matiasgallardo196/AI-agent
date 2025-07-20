@@ -90,7 +90,36 @@ export class OpenAiService {
         return `Eres un agente comercial amable. El usuario pidió ver productos. Reformula esta información de forma clara y atractiva:\n\n${summary}`;
 
       case 'create_cart':
-        return `El usuario acaba de crear un carrito con estos productos:\n\n${summary}\nConfirma la creación de forma amistosa.`;
+        const productLines = cleaned.items
+          .map((item, i) => {
+            const name = item.product?.name || `Producto desconocido (ID: ${item.productId})`;
+            const price = item.product?.price != null ? item.product.price : null;
+            const desc = item.product?.description || '';
+            const priceFormatted = price != null ? `$${price.toLocaleString()}` : '';
+            return `${i + 1}. ${name} x${item.qty}${priceFormatted ? ` - ${priceFormatted}` : ''}${desc ? ` - ${desc}` : ''}`;
+          })
+          .join('\n');
+
+        const total = cleaned.items.reduce((acc, item) => {
+          const unit = item.product?.price;
+          return unit != null ? acc + unit * item.qty : acc;
+        }, 0);
+
+        const totalLine =
+          total > 0 ? `\n\nTotal estimado de la compra: $${total.toLocaleString()}` : '';
+        return `
+                Eres un agente comercial amigable llamado Cristian. Estás ayudando al usuario dentro de un sistema de compras por chat.
+
+                El usuario acaba de crear un carrito con los siguientes productos:
+
+                ${productLines}${totalLine}
+
+                El número de carrito generado es: ${cleaned.id}.
+
+                Confirma de forma amistosa la creación del carrito, incluyendo los nombres, cantidades y el total estimado.
+                Aclara que si más adelante desea modificar su carrito, puede hacerlo indicando el número de ID ${cleaned.id}.
+                Evita lenguaje técnico y hablá como un asesor humano, manteniendo el tono cálido y servicial de Cristian.
+                `.trim();
 
       case 'update_cart':
         return `El usuario modificó su carrito. Los productos ahora son:\n\n${summary}\nConfirma los cambios de forma clara.`;

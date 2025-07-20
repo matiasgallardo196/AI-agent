@@ -51,7 +51,18 @@ export class IntentDetectionService {
     text: string,
     history: ChatMessage[] = [],
   ): Promise<{ product_id: number; qty: number }[]> {
-    const system = `Extrae una lista de productos con cantidad en formato JSON, por ejemplo: [{ "product_id": 3, "qty": 2 }]. Responde solo con el array.`;
+    console.log('Extracting cart items from text:', text);
+    //console.log('History for cart extraction:', history);
+    const system = `
+                  Eres un asistente de compras. Tienes acceso a una lista de productos previamente mostrados al usuario.
+                  El usuario mencionará cantidades y descripciones, y tú debes identificar a qué producto se refiere usando coincidencia exacta o aproximada con los nombres anteriores.
+
+                  Devuelve un array JSON con los productos seleccionados, usando el formato:
+                  [ { "product_id": <ID>, "qty": <cantidad> } ]
+
+                  Usa únicamente los IDs de los productos que fueron mostrados anteriormente.
+                  Responde solo con el array, sin explicaciones.
+                  `;
 
     const raw = await this.openaiService.askChat([
       { role: 'system', content: system },
