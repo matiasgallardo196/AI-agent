@@ -177,13 +177,27 @@ export class MessageService {
     history: ChatMessage[],
     _ctx?: Record<string, any>,
   ) {
-    console.log('Handling update cart for text:', text);
-    const cartId = sessionId ? this.sessions.get(sessionId) : undefined;
-    console.log('Cart ID for update:', sessionId);
+    //console.log('Handling update cart for text:', text);
+    const cartId = await this.intentDetectionService.extractCartId(text, history);
+    //console.log('Cart ID for update:', cartId);
     if (!cartId) {
-      return this.handleFallback('No se encontró un carrito activo.', sessionId, history);
+      return this.openaiService.rephraseForUser({
+        data: null,
+        intention: IntentName.UpdateCart,
+        userMessage: 'no_cart_found',
+        history,
+      });
     }
     const items = await this.intentDetectionService.extractCartItems(text, history);
+    console.log('Items extracted for cart update:', items);
+    if (items.length === 0) {
+      return this.openaiService.rephraseForUser({
+        data: null,
+        intention: IntentName.UpdateCart,
+        userMessage: 'no_items_detected',
+        history,
+      });
+    }
     const cart = await this.cartsService.updateCartItems(cartId, items);
     return this.openaiService.rephraseForUser({
       data: cart,

@@ -153,6 +153,23 @@ export class OpenAiService {
   `.trim();
 
       case 'update_cart':
+      case 'update_cart':
+        if (userMessage === 'no_cart_found') {
+          return `
+            No encontré un carrito activo para modificar.
+            ¿Podés indicarme el número de carrito que querés editar?
+            Por ejemplo: "el 3" o "quiero modificar el carrito 5".
+            `.trim();
+        }
+
+        if (userMessage === 'no_items_detected') {
+          return `
+            No pude identificar qué productos querés modificar en tu carrito.
+            ¿Podés decirme qué productos querés cambiar y en qué cantidades?
+            Por ejemplo: "3 empanadas de carne" o "quiero agregar 2 pizzas de jamón".
+            `.trim();
+        }
+
         return `El usuario modificó su carrito. Los productos ahora son:\n\n${summary}\nConfirma los cambios de forma clara.`;
 
       case 'fallback':

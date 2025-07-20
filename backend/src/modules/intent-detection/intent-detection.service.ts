@@ -51,28 +51,53 @@ export class IntentDetectionService {
     text: string,
     history: ChatMessage[] = [],
   ): Promise<{ product_id: number; qty: number }[]> {
-    console.log('Extracting cart items from text:', text);
+    //console.log('Extracting cart items from text:', text);
     //console.log('History for cart extraction:', history);
     const system = `
-                  Eres un asistente de compras. Tienes acceso a una lista de productos previamente mostrados al usuario.
-                  El usuario mencionará cantidades y descripciones, y tú debes identificar a qué producto se refiere usando coincidencia exacta o aproximada con los nombres anteriores.
+          Eres un asistente de compras dentro de un sistema que espera únicamente respuestas en formato JSON.
 
-                  Devuelve un array JSON con los productos seleccionados, usando el formato:
-                  [ { "product_id": <ID>, "qty": <cantidad> } ]
+          Tu tarea es identificar productos y cantidades que el usuario quiere agregar o modificar en su carrito.
 
-                  Usa únicamente los IDs de los productos que fueron mostrados anteriormente.
-                  Responde solo con el array, sin explicaciones.
-                  `;
+          Tienes acceso a una lista de productos previamente mostrados al usuario (desde el historial).
+
+          Responde siempre con un array JSON usando el siguiente formato:
+          [ { "product_id": <ID>, "qty": <cantidad> } ]
+
+          Si no se puede interpretar ningún producto válido, responde con un array vacío: []
+
+          NO incluyas explicaciones, saludos ni ningún otro texto fuera del JSON.
+          `.trim();
 
     const raw = await this.openaiService.askChat([
       { role: 'system', content: system },
       ...history,
       { role: 'user', content: text },
     ]);
+    //console.log('raw response for cart items extraction:', raw);
     try {
       return JSON.parse(raw);
     } catch {
       throw new BadRequestException('No se pudieron interpretar los ítems del carrito.');
     }
+  }
+  async extractCartId(text: string, history: ChatMessage[] = []): Promise<number | null> {
+    const system =
+      `Eres un asistente que debe identificar el número de carrito mencionado por el usuario.\n\n` +
+      `Si el usuario indica un número de carrito explícitamente (por ejemplo \"carrito 3\" o \"carrito tres\"), responde solo con ese número.\n` +
+      `Si no lo dice pero en el historial hay un mensaje del asistente que menciona \"el número de carrito generado es X\", utiliza ese número.\n` +
+      `Si no puedes inferir ningún número válido, responde con la palabra null.`;
+
+    const raw = await this.openaiService.askChat([
+      { role: 'system', content: system },
+      ...history,
+      { role: 'user', content: text },
+    ]);
+
+    const cleaned = raw.trim().toLowerCase();
+    if (cleaned === 'null') {
+      return null;
+    }
+    const num = parseInt(cleaned, 10);
+    return isNaN(num) ? null : num;
   }
 }
