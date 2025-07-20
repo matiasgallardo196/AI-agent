@@ -11,7 +11,12 @@ import { ChatMessage } from '../../utils/chat-message.type';
 export class MessageService {
   private handlers: Record<
     IntentName,
-    (text: string, sessionId: string | undefined, history: ChatMessage[]) => Promise<string>
+    (
+      text: string,
+      sessionId: string | undefined,
+      history: ChatMessage[],
+      ctx?: Record<string, any>,
+    ) => Promise<string>
   >;
   private sessions = new Map<string, number>();
 
@@ -30,15 +35,34 @@ export class MessageService {
       [IntentName.GetProduct]: this.handleFallback.bind(this),
     } as Record<
       IntentName,
-      (text: string, sessionId: string | undefined, history: ChatMessage[]) => Promise<string>
+      (
+        text: string,
+        sessionId: string | undefined,
+        history: ChatMessage[],
+        ctx?: Record<string, any>,
+      ) => Promise<string>
     >;
+  }
+
+  private isAffirmative(text: string) {
+    return /^(si|sí|dale|ok|okay|claro)$/i.test(text.trim());
   }
 
   async processUserMessage(text: string, sessionId?: string) {
     const history = sessionId ? this.sessionManager.getMessages(sessionId) : [];
     console.log(`Processing message: "${text}"`);
     console.log('History for session:', history);
-    const intent = await this.intentDetectionService.detectIntent(text, history);
+    let intent = await this.intentDetectionService.detectIntent(text, history);
+
+    const context: Record<string, any> = {};
+    if (sessionId) {
+      const pending = this.sessionManager.getPendingAction(sessionId);
+      if (pending === 'adjust_stock_and_create_cart' && this.isAffirmative(text)) {
+        intent = { name: IntentName.CreateCart };
+        context.ajustarStock = true;
+        this.sessionManager.clearPendingAction(sessionId);
+      }
+    }
     const updatedHistory: ChatMessage[] = [...history, { role: 'user', content: text }];
     if (sessionId) {
       this.sessionManager.addMessage(sessionId, {
@@ -49,7 +73,10 @@ export class MessageService {
     const handler = this.handlers[intent.name] ?? this.handleFallback.bind(this);
     console.log(`Detected intent: ${intent.name}`);
     //console.log('Updated history:', updatedHistory);
-    const response = await handler(text, sessionId, updatedHistory);
+    if (sessionId) {
+      this.sessionManager.setLastIntent(sessionId, intent.name);
+    }
+    const response = await handler(text, sessionId, updatedHistory, context);
     if (sessionId) {
       this.sessionManager.addMessage(sessionId, {
         role: 'assistant',
@@ -63,6 +90,7 @@ export class MessageService {
     text: string,
     sessionId: string | undefined,
     history: ChatMessage[],
+    _ctx?: Record<string, any>,
   ) {
     const query = await this.intentDetectionService.extractQuery(text, history);
     console.log('Extracted query for products:', query);
@@ -101,16 +129,32 @@ export class MessageService {
     text: string,
     sessionId: string | undefined,
     history: ChatMessage[],
+    ctx?: { ajustarStock?: boolean },
   ) {
     const items = await this.intentDetectionService.extractCartItems(text, history);
     //console.log('Items extracted for cart creation :', items);
-    const cart = await this.cartsService.createCart(items);
+    let cart = await this.cartsService.createCart(items);
+    if ('errors' in cart && ctx?.ajustarStock) {
+      const adjusted = items.map((item) => {
+        const err = cart.errors.find((e) => e.productId === item.product_id);
+        return err ? { product_id: item.product_id, qty: err.stockDisponible } : item;
+      });
+      cart = await this.cartsService.createCart(adjusted);
+    }
     //console.log('Cart created:', cart);
     if ('items' in cart) {
       //console.log('Cart items:', cart.items);
+      if (sessionId) {
+        this.sessionManager.clearPendingAction(sessionId);
+      }
     } else if ('errors' in cart) {
       console.log('Errores en el  carrito:', cart.errors);
-    } //console.log('History for cart creation:', history);
+      if (sessionId) {
+        this.sessionManager.setPendingAction(sessionId, 'adjust_stock_and_create_cart');
+        this.sessionManager.setLastIntent(sessionId, 'create_cart_error');
+      }
+    }
+    //console.log('History for cart creation:', history);
     if (sessionId && 'id' in cart && 'items' in cart) {
       this.sessions.set(sessionId, cart.id);
     }
@@ -127,6 +171,7 @@ export class MessageService {
     text: string,
     sessionId: string | undefined,
     history: ChatMessage[],
+    _ctx?: Record<string, any>,
   ) {
     const cartId = sessionId ? this.sessions.get(sessionId) : undefined;
     if (!cartId) {
@@ -146,6 +191,7 @@ export class MessageService {
     text: string,
     _sessionId: string | undefined,
     history: ChatMessage[],
+    _ctx?: Record<string, any>,
   ) {
     return this.openaiService.rephraseForUser(
       {
