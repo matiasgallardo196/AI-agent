@@ -16,7 +16,6 @@ export class OpenAiService {
   }
 
   async askChat(messages: ChatMessage[], temperature: number = 0.2): Promise<string> {
-    console.log('Llamando a OpenAI con mensajes:', messages, 'y temperatura:', temperature);
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -44,22 +43,40 @@ export class OpenAiService {
   }
 
   // Método específico: transforma un resultado en una respuesta natural
-  async rephraseForUser(params: { data: any; intention: string; userMessage?: string; history?: ChatMessage[] }, temperature?: number): Promise<string> {
+  async rephraseForUser(
+    params: { data: any; intention: string; userMessage?: string; history?: ChatMessage[] },
+    temperature?: number,
+  ): Promise<string> {
     const prompt = this.buildPrompt(params);
-    console.warn('params:', params, 'temperature:', temperature);
 
     try {
-      const response = await this.askChat([...(params.history || []), { role: 'user', content: prompt }], temperature);
+      const response = await this.askChat(
+        [...(params.history || []), { role: 'user', content: prompt }],
+        temperature,
+      );
       return response;
     } catch (err) {
       console.error('❌ Error en rephraseForUser:', err.message || err);
-      return Array.isArray(params.data) ? params.data.map((p) => p.name).join(', ') : JSON.stringify(params.data);
+      return Array.isArray(params.data)
+        ? params.data.map((p) => p.name).join(', ')
+        : JSON.stringify(params.data);
     }
   }
 
-  private buildPrompt({ data, intention, userMessage }: { data: any; intention: string; userMessage?: string }): string {
-    // Remove heavy fields like embeddings that bloat the prompt
-    const cleaned = JSON.parse(JSON.stringify(data, (key, value) => (key === 'embedding' || key === 'score' ? undefined : value)));
+  private buildPrompt({
+    data,
+    intention,
+    userMessage,
+  }: {
+    data: any;
+    intention: string;
+    userMessage?: string;
+  }): string {
+    const cleaned = JSON.parse(
+      JSON.stringify(data, (key, value) =>
+        key === 'embedding' || key === 'score' ? undefined : value,
+      ),
+    );
 
     const summary = Array.isArray(cleaned)
       ? cleaned
@@ -80,7 +97,19 @@ export class OpenAiService {
 
       case 'fallback':
       default:
-        return `Eres un agente comercial amigable y te llamas Cristian. El usuario escribió: "${userMessage}". Formula una pregunta aclaratoria para entender mejor su intención.`;
+        return `Eres un agente comercial amigable llamado Cristian. Estás dentro de un sistema que solo permite ayudarte a:
+
+                    1. Ver productos disponibles.
+                    2. Consultar detalles de un producto.
+                    3. Crear un carrito de compras.
+                    4. Modificar un carrito existente.
+
+                    El usuario escribió: "${userMessage}"
+
+                    No puedes ayudar con pagos, envíos, datos personales, ni realizar compras reales.
+
+                    Formula una pregunta amistosa y clara para redirigir al usuario hacia una de las funciones que sí puedes realizar. Si el mensaje es muy confuso, intenta guiarlo con ejemplos como: "¿Querés que te muestre los productos disponibles?" o "¿Estás buscando algo específico?".
+                      `.trim();
     }
   }
 

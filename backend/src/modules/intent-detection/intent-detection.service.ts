@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { OpenAiService } from '../openai/openai.service';
-import { IntentName, VALID_INTENTS } from './intents';
+import { INTENT_DESCRIPTIONS, IntentName, VALID_INTENTS } from './intents';
 import { ChatMessage } from '../../utils/chat-message.type';
 
 @Injectable()
@@ -9,9 +9,10 @@ export class IntentDetectionService {
 
   async detectIntent(text: string, history: ChatMessage[] = []): Promise<{ name: IntentName }> {
     const system =
-      `Responde SOLO con un JSON con los campos \"intent\" y \"query\". ` +
-      `Las intenciones válidas son: ${VALID_INTENTS.join(', ')}. ` +
-      `Si no entiendes la intención usa \"${IntentName.Fallback}\" y deja query en null.`;
+      `Responde SOLO con un JSON con los campos "intent" y "query".\n\n` +
+      `Las intenciones válidas son:\n` +
+      `${INTENT_DESCRIPTIONS.map((i) => `- "${i.name}": ${i.description}`).join('\n')}\n\n` +
+      `Si no entiendes la intención, usa "${IntentName.Fallback}" y deja query en null.`;
 
     const raw = await this.openaiService.askChat([
       { role: 'system', content: system },
@@ -60,9 +61,7 @@ export class IntentDetectionService {
     try {
       return JSON.parse(raw);
     } catch {
-      throw new BadRequestException(
-        'No se pudieron interpretar los ítems del carrito.',
-      );
+      throw new BadRequestException('No se pudieron interpretar los ítems del carrito.');
     }
   }
 }

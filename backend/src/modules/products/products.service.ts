@@ -25,9 +25,7 @@ export class ProductsService {
 
     const products = await this.prisma.product.findMany();
 
-    const filtered = products.filter(
-      (p) => Array.isArray(p.embedding) && p.embedding.length > 0,
-    );
+    const filtered = products.filter((p) => Array.isArray(p.embedding) && p.embedding.length > 0);
 
     const scored = filtered
       .map((product) => ({
@@ -36,7 +34,8 @@ export class ProductsService {
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
-
-    return scored;
+    const simplified = scored.map(({ embedding, ...rest }) => rest);
+    //console.log('Scored products:', simplified);
+    return simplified;
   }
 }

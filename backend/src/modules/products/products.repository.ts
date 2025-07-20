@@ -16,7 +16,6 @@ export class ProductsRepository {
           }
         : undefined,
     });
-    console.log('Petición a la base de datos:', peticion, query);
     return await peticion;
   }
 

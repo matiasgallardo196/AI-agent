@@ -9,7 +9,10 @@ import { ChatMessage } from '../../utils/chat-message.type';
 
 @Injectable()
 export class MessageService {
-  private handlers: Record<IntentName, (text: string, sessionId: string | undefined, history: ChatMessage[]) => Promise<string>>;
+  private handlers: Record<
+    IntentName,
+    (text: string, sessionId: string | undefined, history: ChatMessage[]) => Promise<string>
+  >;
   private sessions = new Map<string, number>();
 
   constructor(
@@ -25,7 +28,10 @@ export class MessageService {
       [IntentName.UpdateCart]: this.handleUpdateCart.bind(this),
       [IntentName.Fallback]: this.handleFallback.bind(this),
       [IntentName.GetProduct]: this.handleFallback.bind(this),
-    } as Record<IntentName, (text: string, sessionId: string | undefined, history: ChatMessage[]) => Promise<string>>;
+    } as Record<
+      IntentName,
+      (text: string, sessionId: string | undefined, history: ChatMessage[]) => Promise<string>
+    >;
   }
 
   async processUserMessage(text: string, sessionId?: string) {
@@ -39,6 +45,8 @@ export class MessageService {
       });
     }
     const handler = this.handlers[intent.name] ?? this.handleFallback.bind(this);
+    console.log(`Detected intent: ${intent.name}`);
+    console.log('Updated history:', updatedHistory);
     const response = await handler(text, sessionId, updatedHistory);
     if (sessionId) {
       this.sessionManager.addMessage(sessionId, {
@@ -49,9 +57,17 @@ export class MessageService {
     return response;
   }
 
-  private async handleGetProducts(text: string, _sessionId: string | undefined, history: ChatMessage[]) {
+  private async handleGetProducts(
+    text: string,
+    _sessionId: string | undefined,
+    history: ChatMessage[],
+  ) {
     const query = await this.intentDetectionService.extractQuery(text, history);
-    const products = query ? await this.productsService.searchProductsSemantic(query) : await this.productsService.getAllProducts();
+    console.log('Extracted query for products:', query);
+    const products = query
+      ? await this.productsService.searchProductsSemantic(query)
+      : await this.productsService.getAllProducts();
+    //console.log('Products found:', products);
     return this.openaiService.rephraseForUser({
       data: products,
       intention: IntentName.GetProducts,
@@ -60,8 +76,13 @@ export class MessageService {
     });
   }
 
-  private async handleCreateCart(text: string, sessionId: string | undefined, history: ChatMessage[]) {
+  private async handleCreateCart(
+    text: string,
+    sessionId: string | undefined,
+    history: ChatMessage[],
+  ) {
     const items = await this.intentDetectionService.extractCartItems(text, history);
+    //console.log('Items extracted for cart creation:', items);
     const cart = await this.cartsService.createCart(items);
     if (sessionId) {
       this.sessions.set(sessionId, cart.id);
@@ -74,7 +95,11 @@ export class MessageService {
     });
   }
 
-  private async handleUpdateCart(text: string, sessionId: string | undefined, history: ChatMessage[]) {
+  private async handleUpdateCart(
+    text: string,
+    sessionId: string | undefined,
+    history: ChatMessage[],
+  ) {
     const cartId = sessionId ? this.sessions.get(sessionId) : undefined;
     if (!cartId) {
       return this.handleFallback('No se encontró un carrito activo.', sessionId, history);
@@ -89,7 +114,11 @@ export class MessageService {
     });
   }
 
-  private async handleFallback(text: string, _sessionId: string | undefined, history: ChatMessage[]) {
+  private async handleFallback(
+    text: string,
+    _sessionId: string | undefined,
+    history: ChatMessage[],
+  ) {
     return this.openaiService.rephraseForUser(
       {
         data: null,
