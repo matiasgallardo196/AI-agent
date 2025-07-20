@@ -45,7 +45,9 @@ export class MessageService {
   }
 
   private isAffirmative(text: string) {
-    return /^(si|sí|dale|ok|okay|claro)$/i.test(text.trim());
+    return /^(sí|si|dale|ok|okay|claro|vale|de acuerdo|por supuesto|seguro|perfecto|así es|obvio|obviamente|cierto|eso es)$/i.test(
+      text.trim().toLowerCase(),
+    );
   }
 
   async processUserMessage(text: string, sessionId?: string) {
@@ -136,7 +138,9 @@ export class MessageService {
     let cart = await this.cartsService.createCart(items);
     if ('errors' in cart && ctx?.ajustarStock) {
       const adjusted = items.map((item) => {
-        const err = cart.errors.find((e) => e.productId === item.product_id);
+        const err = ('errors' in cart ? cart.errors : []).find(
+          (e) => e.productId === item.product_id,
+        );
         return err ? { product_id: item.product_id, qty: err.stockDisponible } : item;
       });
       cart = await this.cartsService.createCart(adjusted);
@@ -173,7 +177,9 @@ export class MessageService {
     history: ChatMessage[],
     _ctx?: Record<string, any>,
   ) {
+    console.log('Handling update cart for text:', text);
     const cartId = sessionId ? this.sessions.get(sessionId) : undefined;
+    console.log('Cart ID for update:', sessionId);
     if (!cartId) {
       return this.handleFallback('No se encontró un carrito activo.', sessionId, history);
     }
