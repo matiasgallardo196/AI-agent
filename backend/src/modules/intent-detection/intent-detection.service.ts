@@ -46,7 +46,7 @@ export class IntentDetectionService {
   }
 
   async extractQuery(text: string, history: ChatMessage[] = []): Promise<string | null> {
-    const system = `Si el mensaje menciona un producto, categoría, ingrediente o descripción relevante (como "empanadas", "con queso", "algo con jamón"), responde solo con esas palabras clave para búsqueda. Si no hay nada útil, responde con null.`;
+    const system = `Si el mensaje menciona un tipo de prenda, talla, color, categoría o descripción relevante (como "camiseta", "talla L", "color negro", "algo casual", "prenda ligera"), responde solo con esas palabras clave para búsqueda. Si no hay nada útil para filtrar productos, responde con null.`;
 
     const result = await this.openaiService.askChat([
       { role: 'system', content: system },
