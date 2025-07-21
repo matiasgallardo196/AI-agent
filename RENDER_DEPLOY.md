@@ -1,4 +1,4 @@
-# Deploy en Render para SmartQR Back
+# Deploy en Render para Desafio-Tecnico-CSE---Laburen.com
 
 - Root Directory: `backend`
 - Build Command: `npm install && npm run build`

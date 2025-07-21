@@ -4,9 +4,9 @@
 
 **Escenario 1: Buscar productos**
 
-Usuario: "Quiero ver celulares baratos"
+Usuario: "Quiero ver pantalones"
 ↓
-POST /message { message: "Quiero ver pantalones baratos" }
+POST /message { message: "Quiero ver pantalones" }
 ↓
 OpenAI detecta intención: `get_products`
 ↓

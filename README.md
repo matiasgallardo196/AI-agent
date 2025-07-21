@@ -6,9 +6,9 @@
 
 **Escenario 1: Buscar productos**
 
-Usuario: "Quiero ver celulares baratos"  
+Usuario: "Quiero ver pantalones"  
 ↓  
-POST /message { message: "Quiero ver pantalones baratos" }  
+POST /message { message: "Quiero ver pantalones" }  
 ↓  
 OpenAI detecta intención: `get_products`  
 ↓  
@@ -151,4 +151,3 @@ Con eso, ya podés comenzar a interactuar con el agente vía el chat web.
 
 - 🌐 Frontend: https://desafio-tecnico-cse-laburen-com.vercel.app/
 - 🧠 Backend/API: https://desafio-tecnico-cse-laburen-com.onrender.com
-
