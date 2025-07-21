@@ -50,7 +50,6 @@ export class IntentDetectionService {
       : IntentName.Fallback;
   }
 
-  // (Opcional) Extraer ítems para crear carrito desde el mensaje
   async extractCartItems(
     text: string,
     history: ChatMessage[] = [],
@@ -121,13 +120,10 @@ export class IntentDetectionService {
     const id = parseInt(cleaned, 10);
     if (isNaN(id)) return null;
 
-    // ✅ Verificar existencia en base de datos
     const cart = await this.cartsService.findById(id);
     if (!cart) return null;
 
-    // ✅ Obtener ítems con información de producto
     const items = await this.cartsService.getItemsWithProductInfo(id);
-    // Se espera que `items` sea tipo: { product_id: number, name: string, qty: number }[]
 
     return { id, items };
   }
