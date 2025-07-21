@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "Product" ADD COLUMN     "embedding" DOUBLE PRECISION[];
+ALTER TABLE "products" ADD COLUMN "embedding" DOUBLE PRECISION[];

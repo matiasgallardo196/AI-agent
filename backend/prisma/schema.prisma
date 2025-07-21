@@ -14,24 +14,31 @@ model Product {
   description String
   price       Float
   stock       Int
-  embedding   Float[]  
+  embedding   Float[]
 
   cartItems   CartItem[]
+
+  @@map("products")
 }
 
 
 model Cart {
   id         Int        @id @default(autoincrement())
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
   items      CartItem[]
+
+  @@map("carts")
 }
 
 model CartItem {
   id         Int      @id @default(autoincrement())
   cart       Cart     @relation(fields: [cartId], references: [id])
-  cartId     Int
+  cartId     Int      @map("cart_id")
   product    Product  @relation(fields: [productId], references: [id])
-  productId  Int
+  productId  Int      @map("product_id")
   qty        Int
+
+  @@map("cart_items")
 }
+

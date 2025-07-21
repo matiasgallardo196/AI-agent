@@ -77,10 +77,47 @@ Body: { items: [{ product_id: 123, qty: 1 }] }
    │
    ▼
    ┌────────────────────────────┐
-   │ Prisma ORM │
-   └────────────┬───────────────┘
-   ▼
-   ┌────────────────────────────┐
-   │ PostgreSQL DB │
-   │ - products, carts, items │
-   └────────────────────────────┘
+  │ Prisma ORM │
+  └────────────┬───────────────┘
+  ▼
+  ┌────────────────────────────┐
+  │ PostgreSQL DB │
+  │ - products, carts, items │
+  └────────────────────────────┘
+
+## 2. Puesta en marcha
+
+1. Copiá los archivos `.env.example` de **backend** y **frontend** a `.env` y completá los valores necesarios.
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+2. Instalá las dependencias y ejecutá las migraciones de Prisma:
+
+```bash
+cd backend
+npm install
+npx prisma migrate deploy
+```
+
+3. Cargá un 10 % de los productos de `products.xlsx` ejecutando:
+
+```bash
+npm run products:seed
+```
+
+4. Levantá el backend y el frontend en terminales separadas:
+
+```bash
+# Backend
+cd backend
+npm run start:dev
+
+# Frontend
+cd ../frontend
+npm run dev
+```
+
+El frontend se conecta al backend utilizando la variable `NEXT_PUBLIC_API_BASE_URL` definida en su `.env`.
