@@ -62,11 +62,17 @@ export default function ChatPage() {
         }
       );
 
+      let data;
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error("Error al procesar la respuesta del servidor");
+        }
+        throw new Error(data?.message || data?.response || "Error de servidor");
       }
 
-      const data = await response.json();
+      data = await response.json();
       console.log("Response from server:", data);
       const botMessage: Message = {
         id: Date.now() + 1,
@@ -81,7 +87,9 @@ export default function ChatPage() {
 
       const errorMessage: Message = {
         id: Date.now() + 1,
-        text: "Error: Could not send message",
+        text:
+          (error as Error).message ||
+          "Ocurrió un error al enviar tu mensaje",
         sender: "bot",
         timestamp: new Date(),
       };

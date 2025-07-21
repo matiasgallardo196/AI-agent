@@ -4,6 +4,7 @@ import { OpenAiService } from '../../openai/openai.service';
 import { SessionManagerService } from '../../session-manager/session-manager.service';
 import { IntentName } from '../../intent-detection/intents';
 import { ChatMessage } from '../../../utils/chat-message.type';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 export function createCreateCartHandler(
   intentDetectionService: IntentDetectionService,
@@ -18,15 +19,28 @@ export function createCreateCartHandler(
     ctx?: { ajustarStock?: boolean },
   ) {
     const items = await intentDetectionService.extractCartItems(text, history);
-    let cart = await cartsService.createCart(items);
-    if ('errors' in cart && ctx?.ajustarStock) {
-      const adjusted = items.map((item) => {
-        const err = ('errors' in cart ? cart.errors : []).find(
-          (e) => e.productId === item.product_id,
-        );
-        return err ? { product_id: item.product_id, qty: err.stockDisponible } : item;
-      });
-      cart = await cartsService.createCart(adjusted);
+    let cart;
+    try {
+      cart = await cartsService.createCart(items);
+      if ('errors' in cart && ctx?.ajustarStock) {
+        const adjusted = items.map((item) => {
+          const err = ('errors' in cart ? cart.errors : []).find(
+            (e) => e.productId === item.product_id,
+          );
+          return err ? { product_id: item.product_id, qty: err.stockDisponible } : item;
+        });
+        cart = await cartsService.createCart(adjusted);
+      }
+    } catch (err) {
+      if (err instanceof NotFoundException || err instanceof BadRequestException) {
+        return openaiService.rephraseForUser({
+          data: { error: err.message },
+          intention: IntentName.CreateCart,
+          userMessage: text,
+          history,
+        });
+      }
+      throw err;
     }
     if ('items' in cart) {
       if (sessionId) {
