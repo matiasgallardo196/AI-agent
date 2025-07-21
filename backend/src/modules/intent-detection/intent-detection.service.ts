@@ -18,11 +18,17 @@ export class IntentDetectionService {
       `${INTENT_DESCRIPTIONS.map((i) => `- "${i.name}": ${i.description}`).join('\n')}\n\n` +
       `Si no entiendes la intención, usa "${IntentName.Fallback}" y deja query en null.`;
 
-    const raw = await this.openaiService.askChat([
-      { role: 'system', content: system },
-      ...history,
-      { role: 'user', content: text },
-    ]);
+    let raw: string;
+    try {
+      raw = await this.openaiService.askChat([
+        { role: 'system', content: system },
+        ...history,
+        { role: 'user', content: text },
+      ]);
+    } catch (err) {
+      console.error('❌ Error en detectIntent:', err.message || err);
+      return { name: IntentName.Fallback };
+    }
     try {
       const parsed = JSON.parse(raw);
       return { name: this.normalizeIntent(parsed.intent) };
@@ -92,7 +98,8 @@ export class IntentDetectionService {
     try {
       return JSON.parse(raw);
     } catch {
-      throw new BadRequestException('No se pudieron interpretar los ítems del carrito.');
+      console.error('❌ JSON malformado en extractCartItems');
+      return [];
     }
   }
 
