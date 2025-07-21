@@ -11,15 +11,20 @@ export class IntentDetectionService {
     private readonly cartsService: CartsService,
   ) {}
 
-  async detectIntent(text: string, history: ChatMessage[] = []): Promise<{ name: IntentName }> {
+  async detectIntent(
+    text: string,
+    history: ChatMessage[] = [],
+  ): Promise<{ name: IntentName; query?: string | null }> {
     const system =
-      `Responde SOLO con un JSON con los campos "intent" y "query".\n\n` +
+      `Responde SOLO con un JSON plano con los campos "intent" y "query".\n\n` +
+      `NO uses comillas triples, bloques de código, ni markdown. Solo la respuesta JSON directa.\n\n` +
       `Las intenciones válidas son:\n` +
       `${INTENT_DESCRIPTIONS.map((i) => `- "${i.name}": ${i.description}`).join('\n')}\n\n` +
       `Si no entiendes la intención, usa "${IntentName.Fallback}" y deja query en null.`;
 
     let raw: string;
     try {
+      //console.log(`📤 Enviando a OpenAI:`, { system, history, text });
       raw = await this.openaiService.askChat([
         { role: 'system', content: system },
         ...history,
@@ -27,18 +32,21 @@ export class IntentDetectionService {
       ]);
     } catch (err) {
       console.error('❌ Error en detectIntent:', err.message || err);
-      return { name: IntentName.Fallback };
+      return { name: IntentName.Fallback, query: null };
     }
     try {
       const parsed = JSON.parse(raw);
-      return { name: this.normalizeIntent(parsed.intent) };
+      return {
+        name: this.normalizeIntent(parsed.intent),
+        query: parsed.query ?? null,
+      };
     } catch {
-      return { name: IntentName.Fallback };
+      return { name: IntentName.Fallback, query: null };
     }
   }
 
   async extractQuery(text: string, history: ChatMessage[] = []): Promise<string | null> {
-    const system = `Si el mensaje menciona un producto, categoría, ingrediente o descripción relevante (como "empanadas", "con queso", "algo con jamón"), responde solo con esas palabras clave para búsqueda. Si no hay nada útil, responde con null.`;
+    const system = `Si el mensaje menciona un tipo de prenda, talla, color, categoría o descripción relevante (como "camiseta", "talla L", "color negro", "algo casual", "prenda ligera"), responde solo con esas palabras clave para búsqueda. Si no hay nada útil para filtrar productos, responde con null.`;
 
     const result = await this.openaiService.askChat([
       { role: 'system', content: system },

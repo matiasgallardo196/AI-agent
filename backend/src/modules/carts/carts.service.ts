@@ -58,6 +58,16 @@ export class CartsService {
     return { products, errors };
   }
 
+  adjustItemsForStock(
+    items: { product_id: number; qty: number }[],
+    errors: { productId: number; stockDisponible: number }[],
+  ) {
+    return items.map((item) => {
+      const err = errors.find((e) => e.productId === item.product_id);
+      return err ? { product_id: item.product_id, qty: err.stockDisponible } : item;
+    });
+  }
+
   async createCart(items: { product_id: number; qty: number }[]) {
     if (items.length === 0) {
       throw new BadRequestException('No se puede crear un carrito sin ítems');

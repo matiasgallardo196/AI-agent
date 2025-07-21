@@ -97,9 +97,9 @@ export class PromptBuilder {
 
         if (userMessage === 'no_items_detected') {
           return `
-            No pude identificar qué productos querés modificar en tu carrito.
-            ¿Podés decirme qué productos querés cambiar y en qué cantidades?
-            Por ejemplo: "3 empanadas de carne" o "quiero agregar 2 pizzas de jamón".
+           No pude identificar qué productos querés modificar en tu carrito.
+            ¿Podés decirme qué prendas querés cambiar y en qué cantidades?
+            Por ejemplo: "3 camisetas negras talla M" o "quiero agregar 2 pantalones deportivos".
             `.trim();
         }
 

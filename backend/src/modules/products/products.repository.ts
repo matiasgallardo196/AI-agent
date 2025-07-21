@@ -6,7 +6,7 @@ export class ProductsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query?: string) {
-    const peticion = await this.prisma.product.findMany({
+    const peticion = this.prisma.product.findMany({
       where: query
         ? {
             OR: [
@@ -16,7 +16,7 @@ export class ProductsRepository {
           }
         : undefined,
     });
-    return await peticion;
+    return peticion;
   }
 
   async findById(id: number) {

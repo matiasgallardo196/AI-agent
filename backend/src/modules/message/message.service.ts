@@ -70,11 +70,13 @@ export class MessageService {
 
   async processUserMessage(text: string, sessionId?: string) {
     const history = sessionId ? this.sessionManager.getMessages(sessionId) : [];
-    // console.log(`Processing message: "${text}"`);
+    //console.log(`Processing message: "${text}"`);
     //console.log('History for session:', history);
     let intent = await this.intentDetectionService.detectIntent(text, history);
-
     const context: Record<string, any> = {};
+    if (intent.query !== undefined) {
+      context.query = intent.query;
+    }
     if (sessionId) {
       const pending = this.sessionManager.getPendingAction(sessionId);
       if (pending === 'adjust_stock_and_create_cart' && this.isAffirmative(text)) {
@@ -109,5 +111,4 @@ export class MessageService {
     }
     return response;
   }
-
 }

@@ -15,8 +15,9 @@ export function createGetProductsHandler(
     text: string,
     sessionId: string | undefined,
     history: ChatMessage[],
+    ctx?: { query?: string | null },
   ) {
-    const query = await intentDetectionService.extractQuery(text, history);
+    const query = ctx?.query ?? (await intentDetectionService.extractQuery(text, history));
     const products = query
       ? await productsService.searchProductsSemantic(query)
       : await productsService.getAllProducts();
