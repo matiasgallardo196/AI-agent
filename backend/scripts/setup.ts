@@ -10,12 +10,44 @@ function run(command: string) {
 
 async function main() {
   try {
-    // NO usar db push ni force-reset si ya aplicaste migrate dev
-    // run('npx prisma db push --force-reset'); ❌
+    // 1. Crear extensión pgvector
+    await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS vector`);
+    run('npx prisma db push');
 
-    await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS vector`;
-    await prisma.$executeRaw`CREATE INDEX IF NOT EXISTS "products_embedding_idx" ON "products" USING ivfflat ("embedding" vector_cosine_ops)`;
+    // 2. Forzar el tipo vector(1536) si es necesario
+    const result = await prisma.$queryRawUnsafe<{ exists: boolean }[]>(`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'products'
+        AND column_name = 'embedding'
+      ) as exists;
+    `);
 
+    if (result[0]?.exists) {
+      console.log('📐 Corrigiendo tipo embedding a vector(1536)...');
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE products ALTER COLUMN embedding TYPE vector(1536)`,
+      );
+    }
+
+    // 3. Crear índice ivfflat si no existe
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_indexes WHERE indexname = 'products_embedding_idx'
+        ) THEN
+          CREATE INDEX products_embedding_idx ON products USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+          RAISE NOTICE 'Índice vectorial creado';
+        ELSE
+          RAISE NOTICE 'Índice vectorial ya existe';
+        END IF;
+      END
+      $$;
+    `);
+
+    // 4. Correr seeding + embeddings
     run('ts-node scripts/seedExcelSample.ts');
     run('ts-node scripts/generateEmbeddings.ts');
 

@@ -26,12 +26,25 @@ export class OpenAiService {
     temperature: number = openaiConfig.temperature,
   ): Promise<string> {
     try {
+      console.log(process.env.OPENAI_MODEL, 'OPENAI_MODEL', openaiConfig.model);
+      console.log('📤 Enviando a OpenAI:', {
+        model: openaiConfig.model,
+        messages,
+        temperature,
+      });
       const res = await this.client.chat.completions.create({
         model: openaiConfig.model,
         messages,
         temperature,
       });
-      return res.choices[0].message.content.trim();
+      const choice = res.choices[0];
+      const content = choice?.message?.content;
+
+      if (!content) {
+        throw new Error('Respuesta inválida del modelo: content vacío o nulo');
+      }
+
+      return content.trim();
     } catch (err) {
       console.error('❌ Error en askChat:', err.message || err);
       return 'Hubo un problema técnico al contactar al asistente. Probá nuevamente en unos segundos.';
