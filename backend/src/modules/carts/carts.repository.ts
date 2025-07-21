@@ -8,6 +8,13 @@ export class CartsRepository {
   async findProductsByIds(ids: number[]) {
     return this.prisma.product.findMany({
       where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        stock: true,
+      },
     });
   }
 
@@ -21,7 +28,21 @@ export class CartsRepository {
           })),
         },
       },
-      include: { items: { include: { product: true } } },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                stock: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -60,7 +81,21 @@ export class CartsRepository {
 
       return tx.cart.findUnique({
         where: { id: cartId },
-        include: { items: { include: { product: true } } },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  price: true,
+                  stock: true,
+                },
+              },
+            },
+          },
+        },
       });
     });
   }
@@ -104,7 +139,17 @@ export class CartsRepository {
   async getItemsWithProductInfo(cartId: number) {
     const items = await this.prisma.cartItem.findMany({
       where: { cartId },
-      include: { product: true },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            stock: true,
+          },
+        },
+      },
     });
 
     return items.map((item) => ({
