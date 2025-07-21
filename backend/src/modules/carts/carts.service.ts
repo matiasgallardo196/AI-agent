@@ -53,6 +53,7 @@ export class CartsService {
   }
 
   async updateCartItems(cartId: number, items: { product_id: number; qty: number }[]) {
+    console.log('Updating cart items for cartId:', cartId, 'with items:', items);
     if (items.length === 0) {
       throw new BadRequestException('No se puede actualizar con una lista vacía');
     }
@@ -64,5 +65,13 @@ export class CartsService {
     const cart = await this.cartsRepository.updateCartItemsTransactional(cartId, items);
     await this.cartsRepository.decrementStock(items);
     return cart;
+  }
+
+  async findById(id: number) {
+    return this.cartsRepository.findById(id);
+  }
+
+  async getItemsWithProductInfo(cartId: number) {
+    return this.cartsRepository.getItemsWithProductInfo(cartId);
   }
 }

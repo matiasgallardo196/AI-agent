@@ -2,10 +2,14 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { OpenAiService } from '../openai/openai.service';
 import { INTENT_DESCRIPTIONS, IntentName, VALID_INTENTS } from './intents';
 import { ChatMessage } from '../../utils/chat-message.type';
+import { CartsService } from '../carts/carts.service';
 
 @Injectable()
 export class IntentDetectionService {
-  constructor(private readonly openaiService: OpenAiService) {}
+  constructor(
+    private readonly openaiService: OpenAiService,
+    private readonly cartsService: CartsService,
+  ) {}
 
   async detectIntent(text: string, history: ChatMessage[] = []): Promise<{ name: IntentName }> {
     const system =
@@ -50,41 +54,57 @@ export class IntentDetectionService {
   async extractCartItems(
     text: string,
     history: ChatMessage[] = [],
+    cartItems?: { product_id: number; name: string; qty: number }[],
   ): Promise<{ product_id: number; qty: number }[]> {
-    //console.log('Extracting cart items from text:', text);
-    //console.log('History for cart extraction:', history);
+    const itemsContext = cartItems?.length
+      ? cartItems
+          .map(
+            (item, i) =>
+              `${i + 1}. ID: ${item.product_id}, Nombre: "${item.name}", Cantidad actual: ${item.qty}`,
+          )
+          .join('\n')
+      : null;
+
     const system = `
-          Eres un asistente de compras dentro de un sistema que espera únicamente respuestas en formato JSON.
+    Eres un asistente de compras dentro de un sistema que espera únicamente respuestas en formato JSON.
 
-          Tu tarea es identificar productos y cantidades que el usuario quiere agregar o modificar en su carrito.
+    Tu tarea es identificar qué productos y cantidades el usuario quiere agregar o modificar en su carrito.
 
-          Tienes acceso a una lista de productos previamente mostrados al usuario (desde el historial).
+    ${
+      itemsContext
+        ? `Esta es la lista actual de productos en el carrito:\n${itemsContext}`
+        : `Tienes acceso a una lista de productos previamente mostrados al usuario (desde el historial).`
+    }
 
-          Responde siempre con un array JSON usando el siguiente formato:
-          [ { "product_id": <ID>, "qty": <cantidad> } ]
+    Responde siempre con un array JSON usando el siguiente formato:
+    [ { "product_id": <ID>, "qty": <cantidad> } ]
 
-          Si no se puede interpretar ningún producto válido, responde con un array vacío: []
+    Si no se puede interpretar ningún producto válido, responde con un array vacío: []
 
-          NO incluyas explicaciones, saludos ni ningún otro texto fuera del JSON.
-          `.trim();
+    NO incluyas explicaciones, saludos ni ningún otro texto fuera del JSON.
+  `.trim();
 
     const raw = await this.openaiService.askChat([
       { role: 'system', content: system },
       ...history,
       { role: 'user', content: text },
     ]);
-    //console.log('raw response for cart items extraction:', raw);
+
     try {
       return JSON.parse(raw);
     } catch {
       throw new BadRequestException('No se pudieron interpretar los ítems del carrito.');
     }
   }
-  async extractCartId(text: string, history: ChatMessage[] = []): Promise<number | null> {
+
+  async extractCartInfo(
+    text: string,
+    history: ChatMessage[] = [],
+  ): Promise<ExtractedCartInfo | null> {
     const system =
       `Eres un asistente que debe identificar el número de carrito mencionado por el usuario.\n\n` +
-      `Si el usuario indica un número de carrito explícitamente (por ejemplo \"carrito 3\" o \"carrito tres\"), responde solo con ese número.\n` +
-      `Si no lo dice pero en el historial hay un mensaje del asistente que menciona \"el número de carrito generado es X\", utiliza ese número.\n` +
+      `Si el usuario indica un número de carrito explícitamente (por ejemplo "carrito 3" o "carrito tres"), responde solo con ese número.\n` +
+      `Si no lo dice pero en el historial hay un mensaje del asistente que menciona "el número de carrito generado es X", utiliza ese número.\n` +
       `Si no puedes inferir ningún número válido, responde con la palabra null.`;
 
     const raw = await this.openaiService.askChat([
@@ -97,7 +117,22 @@ export class IntentDetectionService {
     if (cleaned === 'null') {
       return null;
     }
-    const num = parseInt(cleaned, 10);
-    return isNaN(num) ? null : num;
+
+    const id = parseInt(cleaned, 10);
+    if (isNaN(id)) return null;
+
+    // ✅ Verificar existencia en base de datos
+    const cart = await this.cartsService.findById(id);
+    if (!cart) return null;
+
+    // ✅ Obtener ítems con información de producto
+    const items = await this.cartsService.getItemsWithProductInfo(id);
+    // Se espera que `items` sea tipo: { product_id: number, name: string, qty: number }[]
+
+    return { id, items };
   }
 }
+type ExtractedCartInfo = {
+  id: number;
+  items: { product_id: number; name: string; qty: number }[];
+};

@@ -153,7 +153,6 @@ export class OpenAiService {
   `.trim();
 
       case 'update_cart':
-      case 'update_cart':
         if (userMessage === 'no_cart_found') {
           return `
             No encontré un carrito activo para modificar.

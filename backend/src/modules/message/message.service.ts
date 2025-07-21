@@ -52,8 +52,8 @@ export class MessageService {
 
   async processUserMessage(text: string, sessionId?: string) {
     const history = sessionId ? this.sessionManager.getMessages(sessionId) : [];
-    console.log(`Processing message: "${text}"`);
-    console.log('History for session:', history);
+    // console.log(`Processing message: "${text}"`);
+    //console.log('History for session:', history);
     let intent = await this.intentDetectionService.detectIntent(text, history);
 
     const context: Record<string, any> = {};
@@ -95,7 +95,7 @@ export class MessageService {
     _ctx?: Record<string, any>,
   ) {
     const query = await this.intentDetectionService.extractQuery(text, history);
-    console.log('Extracted query for products:', query);
+    //console.log('Extracted query for products:', query);
     const products = query
       ? await this.productsService.searchProductsSemantic(query)
       : await this.productsService.getAllProducts();
@@ -152,7 +152,7 @@ export class MessageService {
         this.sessionManager.clearPendingAction(sessionId);
       }
     } else if ('errors' in cart) {
-      console.log('Errores en el  carrito:', cart.errors);
+      //console.log('Errores en el  carrito:', cart.errors);
       if (sessionId) {
         this.sessionManager.setPendingAction(sessionId, 'adjust_stock_and_create_cart');
         this.sessionManager.setLastIntent(sessionId, 'create_cart_error');
@@ -178,9 +178,9 @@ export class MessageService {
     _ctx?: Record<string, any>,
   ) {
     //console.log('Handling update cart for text:', text);
-    const cartId = await this.intentDetectionService.extractCartId(text, history);
+    const cartInfo = await this.intentDetectionService.extractCartInfo(text, history);
     //console.log('Cart ID for update:', cartId);
-    if (!cartId) {
+    if (!cartInfo) {
       return this.openaiService.rephraseForUser({
         data: null,
         intention: IntentName.UpdateCart,
@@ -188,8 +188,8 @@ export class MessageService {
         history,
       });
     }
-    const items = await this.intentDetectionService.extractCartItems(text, history);
-    console.log('Items extracted for cart update:', items);
+    const items = await this.intentDetectionService.extractCartItems(text, history, cartInfo.items);
+    //console.log('Items extracted for cart update:', items);
     if (items.length === 0) {
       return this.openaiService.rephraseForUser({
         data: null,
@@ -198,7 +198,9 @@ export class MessageService {
         history,
       });
     }
-    const cart = await this.cartsService.updateCartItems(cartId, items);
+    console.log('Text for update cart:', text);
+    console.log('cartId:', cartInfo.id, 'items:', items);
+    const cart = await this.cartsService.updateCartItems(cartInfo.id, items);
     return this.openaiService.rephraseForUser({
       data: cart,
       intention: IntentName.UpdateCart,

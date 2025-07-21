@@ -25,10 +25,7 @@ export class CartsRepository {
     });
   }
 
-  async updateCartItemsTransactional(
-    cartId: number,
-    items: { product_id: number; qty: number }[],
-  ) {
+  async updateCartItemsTransactional(cartId: number, items: { product_id: number; qty: number }[]) {
     return this.prisma.$transaction(async (tx) => {
       await tx.cartItem.deleteMany({
         where: {
@@ -77,5 +74,25 @@ export class CartsRepository {
         }),
       ),
     );
+  }
+
+  async findById(id: number) {
+    return this.prisma.cart.findUnique({
+      where: { id },
+      select: { id: true }, // podés agregar más campos si necesitás
+    });
+  }
+
+  async getItemsWithProductInfo(cartId: number) {
+    const items = await this.prisma.cartItem.findMany({
+      where: { cartId },
+      include: { product: true },
+    });
+
+    return items.map((item) => ({
+      product_id: item.productId,
+      name: item.product.name,
+      qty: item.qty,
+    }));
   }
 }
