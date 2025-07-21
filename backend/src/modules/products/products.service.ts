@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ProductsRepository } from './products.repository';
 import { OpenAiService } from '../openai/openai.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Product } from '@prisma/client';
+import { Prisma, Product } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
@@ -23,9 +23,9 @@ export class ProductsService {
   async searchProductsSemantic(query: string): Promise<Product[]> {
     const queryEmbedding = await this.openaiService.generateEmbedding(query);
 
-    const result = await this.prisma.$queryRawUnsafe<Product[]>(
-      `SELECT * FROM products ORDER BY embedding <#> $1 LIMIT 5`,
-      [queryEmbedding],
+    const vectorParam = Prisma.sql`${queryEmbedding}::vector`;
+    const result = await this.prisma.$queryRaw<Product[]>(
+      Prisma.sql`SELECT * FROM products ORDER BY embedding <#> ${vectorParam} LIMIT 5`,
     );
     //console.log('Scored products:', simplified);
     return result;
