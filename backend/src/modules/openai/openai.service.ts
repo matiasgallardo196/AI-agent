@@ -16,10 +16,7 @@ export class OpenAiService {
     this.client = new OpenAI({ apiKey: this.apiKey });
   }
 
-  async askChat(
-    messages: ChatMessage[],
-    temperature: number = 0.2,
-  ): Promise<string> {
+  async askChat(messages: ChatMessage[], temperature: number = 0.2): Promise<string> {
     try {
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -42,8 +39,7 @@ export class OpenAiService {
       return data.choices[0].message.content.trim();
     } catch (err) {
       console.error('❌ Error en askChat:', err.message || err);
-      return
-        'Hubo un problema técnico al contactar al asistente. Probá nuevamente en unos segundos.';
+      return 'Hubo un problema técnico al contactar al asistente. Probá nuevamente en unos segundos.';
     }
   }
 
@@ -72,7 +68,6 @@ export class OpenAiService {
         : JSON.stringify(params.data);
     }
   }
-
 
   async generateEmbedding(text: string): Promise<number[]> {
     const res = await this.client.embeddings.create({
