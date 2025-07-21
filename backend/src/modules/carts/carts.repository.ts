@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class CartsRepository {
@@ -25,10 +25,7 @@ export class CartsRepository {
     });
   }
 
-  async updateCartItemsTransactional(
-    cartId: number,
-    items: { product_id: number; qty: number }[],
-  ) {
+  async updateCartItemsTransactional(cartId: number, items: { product_id: number; qty: number }[]) {
     return this.prisma.$transaction(async (tx) => {
       await tx.cartItem.deleteMany({
         where: {
@@ -77,5 +74,43 @@ export class CartsRepository {
         }),
       ),
     );
+  }
+
+  async adjustStockDelta(deltas: { product_id: number; delta: number }[]) {
+    return this.prisma.$transaction(
+      deltas.map((item) =>
+        this.prisma.product.update({
+          where: { id: item.product_id },
+          data: { stock: { increment: -item.delta } },
+        }),
+      ),
+    );
+  }
+
+  async getCartItems(cartId: number) {
+    const items = await this.prisma.cartItem.findMany({
+      where: { cartId },
+      select: { productId: true, qty: true },
+    });
+    return items.map((i) => ({ product_id: i.productId, qty: i.qty }));
+  }
+  async findById(id: number) {
+    return this.prisma.cart.findUnique({
+      where: { id },
+      select: { id: true }, // podés agregar más campos si necesitás
+    });
+  }
+
+  async getItemsWithProductInfo(cartId: number) {
+    const items = await this.prisma.cartItem.findMany({
+      where: { cartId },
+      include: { product: true },
+    });
+
+    return items.map((item) => ({
+      product_id: item.productId,
+      name: item.product.name,
+      qty: item.qty,
+    }));
   }
 }

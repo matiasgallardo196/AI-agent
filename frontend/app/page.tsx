@@ -11,6 +11,16 @@ interface Message {
   timestamp: Date;
 }
 
+let sessionId: string | null = null;
+
+if (typeof window !== "undefined") {
+  // sessionId = localStorage.getItem("sessionId");
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    // localStorage.setItem("sessionId", sessionId);
+  }
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -45,7 +55,10 @@ export default function ChatPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message: userMessage.text }),
+          body: JSON.stringify({
+            message: userMessage.text,
+            sessionId,
+          }),
         }
       );
 
@@ -54,7 +67,7 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
-
+      console.log("Response from server:", data);
       const botMessage: Message = {
         id: Date.now() + 1,
         text: data.response || data.message || "No response received",
@@ -108,7 +121,7 @@ export default function ChatPage() {
                   : "bg-gray-200 text-gray-800"
               }`}
             >
-              <p className="text-sm">{message.text}</p>
+              <p className="text-sm whitespace-pre-line">{message.text}</p>
               <p className="text-xs mt-1 opacity-70">
                 {message.timestamp.toLocaleTimeString([], {
                   hour: "2-digit",

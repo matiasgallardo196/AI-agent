@@ -1,11 +1,15 @@
 import { Controller, Post, Body } from '@nestjs/common';
+import { MessageService } from './message.service';
 
 @Controller('message')
 export class MessageController {
+  constructor(private readonly messageService: MessageService) {}
   @Post()
-  handleMessage(@Body() body: { message: string }) {
-    console.log('Mensaje recibido:', body);
-    // Acá llamás a OpenAI y a tus endpoints internos
-    return `Mensaje recibido: ${body.message}`;
+  async handleMessage(@Body() body: { message: string; sessionId?: string }) {
+    const response = await this.messageService.processUserMessage(
+      body.message,
+      body.sessionId,
+    );
+    return { response };
   }
 }
