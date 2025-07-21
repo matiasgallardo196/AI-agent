@@ -5,6 +5,7 @@ interface SessionData {
   messages: ChatMessage[];
   lastIntent?: string;
   pendingAction?: string;
+  cartId?: number;
 }
 
 @Injectable()
@@ -12,7 +13,7 @@ export class SessionManagerService {
   private sessions = new Map<string, SessionData>();
 
   private getSession(sessionId: string): SessionData {
-    return this.sessions.get(sessionId) || { messages: [] };
+    return this.sessions.get(sessionId) || { messages: [], cartId: undefined };
   }
 
   addMessage(sessionId: string, message: ChatMessage) {
@@ -47,6 +48,16 @@ export class SessionManagerService {
 
   getPendingAction(sessionId: string): string | undefined {
     return this.sessions.get(sessionId)?.pendingAction;
+  }
+
+  setCartId(sessionId: string, cartId: number) {
+    const session = this.getSession(sessionId);
+    session.cartId = cartId;
+    this.sessions.set(sessionId, session);
+  }
+
+  getCartId(sessionId: string): number | undefined {
+    return this.sessions.get(sessionId)?.cartId;
   }
 
   clearPendingAction(sessionId: string) {
