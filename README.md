@@ -2,122 +2,147 @@
 
 ## 1. Fase Conceptual · Diseño del Agente de IA
 
-1. **Mapa de flujo**
-   Desafio Tecnico CSE - Laburen.com
+### 🧠 Mapa de flujo del asistente
 
-Usuario: "Quiero ver celulares baratos"
-↓
-Frontend llama: POST /message { message: "Quiero ver celulares baratos" }
-↓
-Backend reenvía a OpenAI → LLM detecta intención: "buscar productos"
-↓
-Backend llama a: GET /products?q=celular
-↓
-Muestra resultados al usuario
+**Escenario 1: Buscar productos**
 
----
-
-Usuario: "Agregá 2 iPhones 13 al carrito"
-↓
-POST /message { message: "Agregá 2 iPhones 13 al carrito" }
-↓
-LLM → intención: "crear carrito"
-↓
-Backend llama a: POST /carts
-Body: { items: [{ product_id: 123, qty: 2 }] }
+Usuario: "Quiero ver celulares baratos"  
+↓  
+POST /message { message: "Quiero ver pantalones baratos" }  
+↓  
+OpenAI detecta intención: `get_products`  
+↓  
+Backend llama a: GET /products?q=pantalones  
+↓  
+Se devuelven los productos encontrados
 
 ---
 
-Usuario: "Mejor poné uno solo"
-↓
-POST /message { message: "Mejor poné uno solo" }
-↓
-LLM → intención: "editar carrito"
-↓
-Backend llama a: PATCH /carts/:id
-Body: { items: [{ product_id: 123, qty: 1 }] }
+**Escenario 2: Crear carrito**
 
-2. **Arquitectura de alto nivel**
-   ┌────────────────────────────┐
-   │ Usuario final │
-   └────────────┬───────────────┘
-   │
-   ▼
-   ┌────────────────────────────┐
-   │ Chat Web (React UI) │
-   │ - Captura el input │
-   │ - Muestra la respuesta │
-   └────────────┬───────────────┘
-   │
-   POST /message
-   │
-   ▼
-   ┌────────────────────────────┐
-   │ NestJS Backend │
-   │ Controller: /message │
-   │ - Valida y enruta mensaje │
-   │ - Llama a OpenAI API │
-   └────────────┬───────────────┘
-   │
-   Detecta intención
-   │
-   ▼
-   ┌────────────────────────────────────────────┐
-   │ OpenAI API (function-calling / completions)│
-   │ - Devuelve intención y argumentos │
-   └────────────┬───────────────────────────────┘
-   │
-   ▼
-   ┌────────────────────────────┐
-   │ Lógica de ejecución NestJS │
-   │ - Llama a API interna REST │
-   └────────────┬───────────────┘
-   ▼
-   Endpoints internos: - GET /products?q=... - POST /carts - PATCH /carts/:id
-   │
-   ▼
-   ┌────────────────────────────┐
-  │ Prisma ORM │
-  └────────────┬───────────────┘
-  ▼
-  ┌────────────────────────────┐
-  │ PostgreSQL DB │
-  │ - products, carts, items │
-  └────────────────────────────┘
+Usuario: "Agregá 2 Pantalón Verde Talla XXL al carrito"  
+↓  
+POST /message { message: "Agregá 2 Pantalón Verde Talla XXL al carrito" }  
+↓  
+OpenAI detecta intención: `create_cart`  
+↓  
+Backend llama a: POST /carts  
+Body: { items: [{ product_id: 1, qty: 2 }] }
 
-## 2. Puesta en marcha
+---
 
-1. Copiá los archivos `.env.example` de **backend** y **frontend** a `.env` y completá los valores necesarios.
+**Escenario 3: Modificar carrito**
 
-```bash
+Usuario: "Mejor poné uno solo"  
+↓  
+POST /message { message: "Mejor poné uno solo" }  
+↓  
+OpenAI detecta intención: `update_cart`  
+↓  
+PATCH /carts/:id  
+Body: { items: [{ product_id: 1, qty: 1 }] }
+
+---
+
+### 🧱 Arquitectura de alto nivel
+
+    ┌────────────────────────────┐
+    │      Usuario final         │
+    └────────────┬───────────────┘
+                 ▼
+    ┌────────────────────────────┐
+    │ Chat Web (React)           │
+    │ - Captura input            │
+    │ - Muestra respuesta        │
+    └────────────┬───────────────┘
+                 │ POST /message
+                 ▼
+    ┌────────────────────────────┐
+    │ NestJS Backend             │
+    │ - Detecta intención        │
+    │ - Ejecuta lógica por intent│
+    └────────────┬───────────────┘
+                 ▼
+    ┌────────────────────────────┐
+    │ OpenAI (embeddings + intent) │
+    └────────────┬───────────────┘
+                 ▼
+    ┌────────────────────────────┐
+    │ Prisma + PostgreSQL        │
+    └────────────────────────────┘
+
+---
+
+## 2. Puesta en marcha del entorno
+
+### 🛠 Requisitos
+
+- Node.js v18+
+- PostgreSQL local
+- API key de OpenAI
+
+---
+
+### 🚀 Setup completo (backend)
+
+1. Cloná el proyecto y creá los `.env`:
+
+```
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-2. Instalá las dependencias y ejecutá las migraciones de Prisma:
+2. Completá las variables necesarias en ambos `.env`, por ejemplo:
 
-```bash
+```
+# backend/.env
+DATABASE_URL=postgresql://usuario:contraseña@localhost:5432/postgres
+OPENAI_API_KEY=sk-...
+
+# frontend/.env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+```
+
+3. Instalá dependencias:
+
+```
 cd backend
 npm install
-npx prisma migrate deploy
 ```
 
-3. Cargá un 10 % de los productos de `products.xlsx` ejecutando:
+4. Ejecutá el entorno completo con datos y embeddings ya generados:
 
-```bash
-npm run products:seed
+```
+npm run setup
 ```
 
-4. Levantá el backend y el frontend en terminales separadas:
+Este comando:
 
-```bash
+- Crea la estructura de base de datos (`db push`)
+- Carga un 10 % de `products.xlsx`
+- Genera embeddings con OpenAI
+
+---
+
+### ▶️ Levantar frontend y backend
+
+En dos terminales distintas:
+
+```
 # Backend
 cd backend
 npm run start:dev
+```
 
+```
 # Frontend
-cd ../frontend
+cd frontend
+npm install
 npm run dev
 ```
 
-El frontend se conecta al backend utilizando la variable `NEXT_PUBLIC_API_BASE_URL` definida en su `.env`.
+El frontend se conecta al backend utilizando la variable `NEXT_PUBLIC_API_BASE_URL`.
+
+---
+
+Con eso, ya podés comenzar a interactuar con el agente vía el chat web.
