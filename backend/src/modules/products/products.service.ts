@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ProductsRepository } from './products.repository';
 import { OpenAiService } from '../openai/openai.service';
-import { PrismaService } from 'prisma/prisma.service';
-import { cosineSimilarity } from 'src/utils/cosineSimilarity';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { cosineSimilarity } from '../../utils/cosineSimilarity';
 
 @Injectable()
 export class ProductsService {
