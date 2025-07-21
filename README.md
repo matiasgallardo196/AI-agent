@@ -146,3 +146,9 @@ El frontend se conecta al backend utilizando la variable `NEXT_PUBLIC_API_BASE_U
 ---
 
 Con eso, ya podés comenzar a interactuar con el agente vía el chat web.
+
+## 🚀 Demo
+
+- 🌐 Frontend: https://desafio-tecnico-cse-laburen-com.vercel.app/
+- 🧠 Backend/API: https://desafio-tecnico-cse-laburen-com.onrender.com
+
