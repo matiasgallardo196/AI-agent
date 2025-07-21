@@ -19,6 +19,7 @@ export function createUpdateCartHandler(
     ctx?: { ajustarStock?: boolean },
   ) {
     const cartInfo = await intentDetectionService.extractCartInfo(text, history);
+    console.log('Cart info extracted:', cartInfo);
     if (!cartInfo) {
       return openaiService.rephraseForUser({
         data: null,
@@ -27,11 +28,7 @@ export function createUpdateCartHandler(
         history,
       });
     }
-    const items = await intentDetectionService.extractCartItems(
-      text,
-      history,
-      cartInfo.items,
-    );
+    const items = await intentDetectionService.extractCartItems(text, history, cartInfo.items);
     if (items.length === 0) {
       return openaiService.rephraseForUser({
         data: null,

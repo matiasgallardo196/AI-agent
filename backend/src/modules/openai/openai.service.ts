@@ -3,10 +3,11 @@ import OpenAI from 'openai';
 import { ChatMessage } from '../../utils/chat-message.type';
 import { PromptBuilder } from '../../utils/prompt-builder';
 import { openaiConfig } from '../../config/openai.config';
+import { OPENAI_API_KEY } from 'src/config/env.loader';
 
 @Injectable()
 export class OpenAiService {
-  private readonly apiKey = process.env.OPENAI_API_KEY;
+  private readonly apiKey = OPENAI_API_KEY;
   private readonly client: OpenAI;
   private embeddingCache = new Map<string, number[]>();
 
@@ -26,24 +27,22 @@ export class OpenAiService {
     temperature: number = openaiConfig.temperature,
   ): Promise<string> {
     try {
-      console.log(process.env.OPENAI_MODEL, 'OPENAI_MODEL', openaiConfig.model);
-      console.log('📤 Enviando a OpenAI:', {
-        model: openaiConfig.model,
-        messages,
-        temperature,
-      });
+      //console.log(`📤 Enviando a OpenAI:`, { model: openaiConfig.model, messages, temperature });
+
       const res = await this.client.chat.completions.create({
         model: openaiConfig.model,
         messages,
         temperature,
       });
       const choice = res.choices[0];
+      //console.log(`📥 Respuesta de OpenAI:`, { choice });
       const content = choice?.message?.content;
 
       if (!content) {
         throw new Error('Respuesta inválida del modelo: content vacío o nulo');
       }
 
+      //console.log(`📥 Respuesta de OpenAI:`, content.trim());
       return content.trim();
     } catch (err) {
       console.error('❌ Error en askChat:', err.message || err);

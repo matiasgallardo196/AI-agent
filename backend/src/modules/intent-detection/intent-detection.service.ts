@@ -16,13 +16,15 @@ export class IntentDetectionService {
     history: ChatMessage[] = [],
   ): Promise<{ name: IntentName; query?: string | null }> {
     const system =
-      `Responde SOLO con un JSON con los campos "intent" y "query".\n\n` +
+      `Responde SOLO con un JSON plano con los campos "intent" y "query".\n\n` +
+      `NO uses comillas triples, bloques de código, ni markdown. Solo la respuesta JSON directa.\n\n` +
       `Las intenciones válidas son:\n` +
       `${INTENT_DESCRIPTIONS.map((i) => `- "${i.name}": ${i.description}`).join('\n')}\n\n` +
       `Si no entiendes la intención, usa "${IntentName.Fallback}" y deja query en null.`;
 
     let raw: string;
     try {
+      //console.log(`📤 Enviando a OpenAI:`, { system, history, text });
       raw = await this.openaiService.askChat([
         { role: 'system', content: system },
         ...history,

@@ -70,7 +70,7 @@ export class MessageService {
 
   async processUserMessage(text: string, sessionId?: string) {
     const history = sessionId ? this.sessionManager.getMessages(sessionId) : [];
-    // console.log(`Processing message: "${text}"`);
+    //console.log(`Processing message: "${text}"`);
     //console.log('History for session:', history);
     let intent = await this.intentDetectionService.detectIntent(text, history);
     const context: Record<string, any> = {};
@@ -111,5 +111,4 @@ export class MessageService {
     }
     return response;
   }
-
 }
