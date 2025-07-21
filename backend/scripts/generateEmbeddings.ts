@@ -21,10 +21,11 @@ async function main() {
 
       const embedding = embeddingRes.data[0].embedding;
 
-      await prisma.product.update({
-        where: { id: product.id },
-        data: { embedding },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE "products" SET embedding = $1 WHERE id = $2`,
+        embedding,
+        product.id,
+      );
 
       console.log(`✅ Guardado: ${product.name}`);
     } catch (error) {

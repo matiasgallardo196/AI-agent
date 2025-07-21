@@ -24,10 +24,13 @@ export class ProductsService {
     const queryEmbedding = await this.openaiService.generateEmbedding(query);
 
     const vectorParam = Prisma.sql`${queryEmbedding}::vector`;
-    const result = await this.prisma.$queryRaw<Product[]>(
-      Prisma.sql`SELECT * FROM products ORDER BY embedding <#> ${vectorParam} LIMIT 5`,
-    );
-    //console.log('Scored products:', simplified);
+    const result = await this.prisma.$queryRaw<Product[]>(Prisma.sql`
+          SELECT id, name, description, price, stock
+          FROM products
+          ORDER BY embedding <#> ${vectorParam}
+          LIMIT 5
+        `);
+    console.log(result);
     return result;
   }
 }
