@@ -76,6 +76,24 @@ export class CartsRepository {
     );
   }
 
+  async adjustStockDelta(deltas: { product_id: number; delta: number }[]) {
+    return this.prisma.$transaction(
+      deltas.map((item) =>
+        this.prisma.product.update({
+          where: { id: item.product_id },
+          data: { stock: { increment: -item.delta } },
+        }),
+      ),
+    );
+  }
+
+  async getCartItems(cartId: number) {
+    const items = await this.prisma.cartItem.findMany({
+      where: { cartId },
+      select: { productId: true, qty: true },
+    });
+    return items.map((i) => ({ product_id: i.productId, qty: i.qty }));
+  }
   async findById(id: number) {
     return this.prisma.cart.findUnique({
       where: { id },

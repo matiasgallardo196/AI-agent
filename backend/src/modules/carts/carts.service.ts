@@ -5,6 +5,26 @@ import { CartsRepository } from './carts.repository';
 export class CartsService {
   constructor(private readonly cartsRepository: CartsRepository) {}
 
+  private computeDeltas(
+    current: { product_id: number; qty: number }[],
+    updated: { product_id: number; qty: number }[],
+  ) {
+    const currentMap = new Map<number, number>(current.map((i) => [i.product_id, i.qty]));
+    const updatedMap = new Map<number, number>(updated.map((i) => [i.product_id, i.qty]));
+
+    const allIds = new Set<number>([...currentMap.keys(), ...updatedMap.keys()]);
+
+    const deltas: { product_id: number; delta: number }[] = [];
+    for (const id of allIds) {
+      const oldQty = currentMap.get(id) ?? 0;
+      const newQty = updatedMap.get(id) ?? 0;
+      if (oldQty !== newQty) {
+        deltas.push({ product_id: id, delta: newQty - oldQty });
+      }
+    }
+    return deltas;
+  }
+
   private async validateProductsAndStock(items: { product_id: number; qty: number }[]) {
     const productIds = items.map((i) => i.product_id);
     const products = await this.cartsRepository.findProductsByIds(productIds);
@@ -58,12 +78,20 @@ export class CartsService {
       throw new BadRequestException('No se puede actualizar con una lista vacía');
     }
 
-    const { errors } = await this.validateProductsAndStock(items);
+    const currentItems = await this.cartsRepository.getCartItems(cartId);
+    const deltas = this.computeDeltas(currentItems, items);
+
+    const toValidate = deltas
+      .filter((d) => d.delta > 0)
+      .map((d) => ({ product_id: d.product_id, qty: d.delta }));
+
+    const { errors } = await this.validateProductsAndStock(toValidate);
     if (errors.length > 0) {
       return { errors };
     }
+
     const cart = await this.cartsRepository.updateCartItemsTransactional(cartId, items);
-    await this.cartsRepository.decrementStock(items);
+    await this.cartsRepository.adjustStockDelta(deltas);
     return cart;
   }
 
