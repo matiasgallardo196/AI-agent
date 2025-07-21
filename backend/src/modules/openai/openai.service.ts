@@ -2,41 +2,36 @@ import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ChatMessage } from '../../utils/chat-message.type';
 import { PromptBuilder } from '../../utils/prompt-builder';
+import { openaiConfig } from '../../config/openai.config';
 
 @Injectable()
 export class OpenAiService {
   private readonly apiKey = process.env.OPENAI_API_KEY;
-  private readonly model = /*'gpt-3.5-turbo';*/ 'gpt-4';
   private readonly client: OpenAI;
+  private embeddingCache = new Map<string, number[]>();
 
   constructor() {
     if (!this.apiKey) {
       throw new Error('OPENAI_API_KEY no definido');
     }
-    this.client = new OpenAI({ apiKey: this.apiKey });
+    this.client = new OpenAI({
+      apiKey: this.apiKey,
+      timeout: openaiConfig.timeoutMs,
+      maxRetries: openaiConfig.maxRetries,
+    });
   }
 
-  async askChat(messages: ChatMessage[], temperature: number = 0.2): Promise<string> {
+  async askChat(
+    messages: ChatMessage[],
+    temperature: number = openaiConfig.temperature,
+  ): Promise<string> {
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages,
-          temperature,
-        }),
+      const res = await this.client.chat.completions.create({
+        model: openaiConfig.model,
+        messages,
+        temperature,
       });
-
-      if (!res.ok) {
-        throw new Error(`OpenAI API error: ${res.status} ${res.statusText}`);
-      }
-
-      const data = await res.json();
-      return data.choices[0].message.content.trim();
+      return res.choices[0].message.content.trim();
     } catch (err) {
       console.error('❌ Error en askChat:', err.message || err);
       return 'Hubo un problema técnico al contactar al asistente. Probá nuevamente en unos segundos.';
@@ -70,10 +65,16 @@ export class OpenAiService {
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
+    const cached = this.embeddingCache.get(text);
+    if (cached) {
+      return cached;
+    }
     const res = await this.client.embeddings.create({
       model: 'text-embedding-3-small',
       input: text,
     });
-    return res.data[0].embedding;
+    const embedding = res.data[0].embedding;
+    this.embeddingCache.set(text, embedding);
+    return embedding;
   }
 }
