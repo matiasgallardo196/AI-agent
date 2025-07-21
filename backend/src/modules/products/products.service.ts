@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ProductsRepository } from './products.repository';
 import { OpenAiService } from '../openai/openai.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { cosineSimilarity } from '../../utils/cosineSimilarity';
+import { Prisma, Product } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
@@ -20,22 +20,17 @@ export class ProductsService {
     return await this.productsRepository.findById(id);
   }
 
-  async searchProductsSemantic(query: string) {
+  async searchProductsSemantic(query: string): Promise<Product[]> {
     const queryEmbedding = await this.openaiService.generateEmbedding(query);
 
-    const products = await this.prisma.product.findMany();
-
-    const filtered = products.filter((p) => Array.isArray(p.embedding) && p.embedding.length > 0);
-
-    const scored = filtered
-      .map((product) => ({
-        ...product,
-        score: cosineSimilarity(queryEmbedding, product.embedding),
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
-    const simplified = scored.map(({ embedding, ...rest }) => rest);
-    //console.log('Scored products:', simplified);
-    return simplified;
+    const vectorParam = Prisma.sql`${queryEmbedding}::vector`;
+    const result = await this.prisma.$queryRaw<Product[]>(Prisma.sql`
+          SELECT id, name, description, price, stock
+          FROM products
+          ORDER BY embedding <#> ${vectorParam}
+          LIMIT 5
+        `);
+    console.log(result);
+    return result;
   }
 }

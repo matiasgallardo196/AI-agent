@@ -14,7 +14,7 @@ model Product {
   description String
   price       Float
   stock       Int
-  embedding   Float[]
+  embedding   Unsupported("vector")?
 
   cartItems   CartItem[]
 
