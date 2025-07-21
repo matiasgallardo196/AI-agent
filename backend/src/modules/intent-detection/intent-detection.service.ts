@@ -11,7 +11,10 @@ export class IntentDetectionService {
     private readonly cartsService: CartsService,
   ) {}
 
-  async detectIntent(text: string, history: ChatMessage[] = []): Promise<{ name: IntentName }> {
+  async detectIntent(
+    text: string,
+    history: ChatMessage[] = [],
+  ): Promise<{ name: IntentName; query?: string | null }> {
     const system =
       `Responde SOLO con un JSON con los campos "intent" y "query".\n\n` +
       `Las intenciones válidas son:\n` +
@@ -27,13 +30,16 @@ export class IntentDetectionService {
       ]);
     } catch (err) {
       console.error('❌ Error en detectIntent:', err.message || err);
-      return { name: IntentName.Fallback };
+      return { name: IntentName.Fallback, query: null };
     }
     try {
       const parsed = JSON.parse(raw);
-      return { name: this.normalizeIntent(parsed.intent) };
+      return {
+        name: this.normalizeIntent(parsed.intent),
+        query: parsed.query ?? null,
+      };
     } catch {
-      return { name: IntentName.Fallback };
+      return { name: IntentName.Fallback, query: null };
     }
   }
 

@@ -23,12 +23,10 @@ export function createCreateCartHandler(
     try {
       cart = await cartsService.createCart(items);
       if ('errors' in cart && ctx?.ajustarStock) {
-        const adjusted = items.map((item) => {
-          const err = ('errors' in cart ? cart.errors : []).find(
-            (e) => e.productId === item.product_id,
-          );
-          return err ? { product_id: item.product_id, qty: err.stockDisponible } : item;
-        });
+        const adjusted = cartsService.adjustItemsForStock(
+          items,
+          'errors' in cart ? cart.errors : [],
+        );
         cart = await cartsService.createCart(adjusted);
       }
     } catch (err) {

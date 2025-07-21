@@ -19,6 +19,8 @@ model Product {
   cartItems   CartItem[]
 
   @@map("products")
+  @@index([name], map: "idx_products_name")
+  @@index([description], map: "idx_products_description")
 }
 
 
