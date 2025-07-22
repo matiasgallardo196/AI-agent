@@ -153,7 +153,7 @@ La base de datos fue modelada con Prisma ORM y alojada en Supabase para aprovech
 [{ "id": 1, "name": "Pantalón Verde", "price": 25.5, "stock": 12 }]
 ```
 
-- **Errores:** 404 Not Found ,500 error interno
+- **Errores:** 404 Not Found 500 error interno
 
 ---
 
@@ -167,7 +167,7 @@ La base de datos fue modelada con Prisma ORM y alojada en Supabase para aprovech
 { "id": 1, "name": "Pantalón Verde", "price": 25.5, "stock": 12 }
 ```
 
-- **Errores:** 404 si no existe, 500 error interno
+- **Errores:** 404 si no existe
 
 ---
 
@@ -199,3 +199,4 @@ La base de datos fue modelada con Prisma ORM y alojada en Supabase para aprovech
 >
 > - Frontend: [https://desafio-tecnico-cse-laburen-com.vercel.app/](https://desafio-tecnico-cse-laburen-com.vercel.app/)
 > - Backend: [https://desafio-tecnico-cse-laburen-com.onrender.com](https://desafio-tecnico-cse-laburen-com.onrender.com)
+> - WhatsApp (Twilio sandbox): enviá el mensaje **join feed-individual** al número **+1 415 523 8886** desde tu WhatsApp para unirte. Luego podés interactuar con el agente normalmente (por ejemplo: “Quiero ver pantalones”).
