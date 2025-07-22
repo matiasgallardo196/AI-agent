@@ -26,8 +26,6 @@ export class PromptBuilder {
         return `Eres un agente comercial amable. El usuario pidió ver productos. Reformula esta información de forma clara y atractiva:\n\n${summary}`;
 
       case 'create_cart':
-        //console.log('Creating cart with data:', cleaned);
-
         if ('errors' in cleaned && Array.isArray(cleaned.errors)) {
           const errores = cleaned.errors
             .map((err, i) => {

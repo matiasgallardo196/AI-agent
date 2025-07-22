@@ -134,7 +134,7 @@ export class CartsRepository {
   async findById(id: number) {
     return this.prisma.cart.findUnique({
       where: { id },
-      select: { id: true }, // podés agregar más campos si necesitás
+      select: { id: true },
     });
   }
 

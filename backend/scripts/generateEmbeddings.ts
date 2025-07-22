@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 async function main() {
-  const products = await prisma.product.findMany(); // sin filtro
+  const products = await prisma.product.findMany();
 
   console.log(`📦 Total de productos encontrados: ${products.length}`);
 

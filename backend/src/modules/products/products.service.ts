@@ -30,7 +30,6 @@ export class ProductsService {
           ORDER BY embedding <#> ${vectorParam}
           LIMIT 5
         `);
-    //console.log(result);
     return result;
   }
 }

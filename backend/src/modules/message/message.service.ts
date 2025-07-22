@@ -70,8 +70,7 @@ export class MessageService {
 
   async processUserMessage(text: string, sessionId?: string) {
     const history = sessionId ? this.sessionManager.getMessages(sessionId) : [];
-    //console.log(`Processing message: "${text}"`);
-    //console.log('History for session:', history);
+
     let intent = await this.intentDetectionService.detectIntent(text, history);
     const context: Record<string, any> = {};
     if (intent.query !== undefined) {
@@ -97,8 +96,7 @@ export class MessageService {
       });
     }
     const handler = this.handlers[intent.name] ?? this.handlers[IntentName.Fallback];
-    //console.log(`Detected intent: ${intent.name}`);
-    //console.log('Updated history:', updatedHistory);
+
     if (sessionId) {
       this.sessionManager.setLastIntent(sessionId, intent.name);
     }

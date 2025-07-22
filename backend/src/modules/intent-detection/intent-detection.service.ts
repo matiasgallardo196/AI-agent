@@ -24,7 +24,6 @@ export class IntentDetectionService {
 
     let raw: string;
     try {
-      //console.log(`📤 Enviando a OpenAI:`, { system, history, text });
       raw = await this.openaiService.askChat([
         { role: 'system', content: system },
         ...history,

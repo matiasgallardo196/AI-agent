@@ -27,22 +27,18 @@ export class OpenAiService {
     temperature: number = openaiConfig.temperature,
   ): Promise<string> {
     try {
-      //console.log(`📤 Enviando a OpenAI:`, { model: openaiConfig.model, messages, temperature });
-
       const res = await this.client.chat.completions.create({
         model: openaiConfig.model,
         messages,
         temperature,
       });
       const choice = res.choices[0];
-      //console.log(`📥 Respuesta de OpenAI:`, { choice });
       const content = choice?.message?.content;
 
       if (!content) {
         throw new Error('Respuesta inválida del modelo: content vacío o nulo');
       }
 
-      //console.log(`📥 Respuesta de OpenAI:`, content.trim());
       return content.trim();
     } catch (err) {
       console.error('❌ Error en askChat:', err.message || err);
@@ -50,12 +46,10 @@ export class OpenAiService {
     }
   }
 
-  // Método general: recibe prompt y devuelve string plano
   async askRaw(prompt: string, temperature?: number): Promise<string> {
     return this.askChat([{ role: 'user', content: prompt }], temperature);
   }
 
-  // Método específico: transforma un resultado en una respuesta natural
   async rephraseForUser(
     params: { data: any; intention: string; userMessage?: string; history?: ChatMessage[] },
     temperature?: number,

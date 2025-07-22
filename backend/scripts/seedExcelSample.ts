@@ -17,7 +17,6 @@ async function main() {
   const headers = rows[0];
   const dataRows = rows.slice(1);
 
-  // Indices de columnas relevantes
   const colIndex = {
     tipoPrenda: headers.indexOf('TIPO_PRENDA'),
     color: headers.indexOf('COLOR'),

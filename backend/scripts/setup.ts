@@ -10,11 +10,10 @@ function run(command: string) {
 
 async function main() {
   try {
-    // 1. Crear extensión pgvector
     await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS vector`);
     run('npx prisma db push');
+    run('npx prisma generate');
 
-    // 2. Forzar el tipo vector(1536) si es necesario
     const result = await prisma.$queryRawUnsafe<{ exists: boolean }[]>(`
       SELECT EXISTS (
         SELECT 1
@@ -31,7 +30,6 @@ async function main() {
       );
     }
 
-    // 3. Crear índice ivfflat si no existe
     await prisma.$executeRawUnsafe(`
       DO $$
       BEGIN
@@ -47,7 +45,6 @@ async function main() {
       $$;
     `);
 
-    // 4. Correr seeding + embeddings
     run('ts-node scripts/seedExcelSample.ts');
     run('ts-node scripts/generateEmbeddings.ts');
 

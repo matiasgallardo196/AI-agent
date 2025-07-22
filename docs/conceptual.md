@@ -51,9 +51,11 @@ Body: { items: [{ product_id: 1, qty: 1 }] }
 │      Usuario final         │
 └────────────┬───────────────┘
              ▼
-┌────────────────────────────┐
-│ Chat Web (React)           │
-└────────────┬───────────────┘
+┌──────────────────────────────────────────────┐
+│ Chat Web (React) / WhatsApp (Twilio API)     │
+│ - Captura el input del usuario               │
+│ - Envía mensajes al backend vía HTTP         │
+└────────────┬─────────────────────────────────┘
              │ POST /message
              ▼
 ┌────────────────────────────┐
@@ -76,6 +78,7 @@ Body: { items: [{ product_id: 1, qty: 1 }] }
 - Arquitectura modular (NestJS con servicios separados)
 - Uso de HTTP estándar, ideal para integraciones REST
 - PostgreSQL permite escalabilidad y queries complejas
+- Supabase facilita el uso de PostgreSQL administrado con extensiones como `pgvector`, fundamentales para búsquedas semánticas con embeddings
 - Prisma simplifica el acceso a la base y las migraciones
 - Interfaz limpia: un solo endpoint `/message` maneja todo
 
@@ -123,6 +126,20 @@ cd frontend && npm install && npm run dev
 
 ---
 
+### 2.3 Esquema de Base de Datos
+
+La base de datos fue modelada con Prisma ORM y alojada en Supabase para aprovechar extensiones como `pgvector`.
+
+| Tabla        | Campos clave                                                                   |
+| ------------ | ------------------------------------------------------------------------------ |
+| `products`   | `id`, `name`, `description`, `price`, `stock`, `embedding` _(vector opcional)_ |
+| `carts`      | `id`, `created_at`, `updated_at`                                               |
+| `cart_items` | `id`, `cart_id` (FK), `product_id` (FK), `qty`                                 |
+
+> Índices agregados a `name` y `description` para búsquedas más eficientes.  
+> Se incluyó el campo `embedding` (vector) en el modelo `Product` para habilitar búsquedas semánticas mediante embeddings generados por OpenAI. Este campo requiere la extensión `pgvector`, disponible en Supabase.
+> Las relaciones están definidas con `@relation` y las columnas se mapean a `snake_case` mediante `@@map` para alinearse al estilo SQL convencional.
+
 ## 3. Documentación de la API
 
 ### GET /products
@@ -135,11 +152,11 @@ cd frontend && npm install && npm run dev
 [{ "id": 1, "name": "Pantalón Verde", "price": 25.5, "stock": 12 }]
 ```
 
-- **Errores:** 500 error interno
+- **Errores:** 404 Not Found ,500 error interno
 
 ---
 
-### GET /products/\:id
+### GET /products/:id
 
 - **Descripción:** Devuelve un producto por ID
 - **Parámetros path:** `id` (número)
@@ -149,7 +166,7 @@ cd frontend && npm install && npm run dev
 { "id": 1, "name": "Pantalón Verde", "price": 25.5, "stock": 12 }
 ```
 
-- **Errores:** 404 si no existe, 500 si falla
+- **Errores:** 404 si no existe, 500 error interno
 
 ---
 
