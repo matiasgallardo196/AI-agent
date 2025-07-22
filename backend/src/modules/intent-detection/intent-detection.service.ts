@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { OpenAiService } from '../openai/openai.service';
 import { INTENT_DESCRIPTIONS, IntentName, VALID_INTENTS } from './intents';
 import { ChatMessage } from '../../utils/chat-message.type';
@@ -7,6 +7,8 @@ import { BASE_URL } from 'src/config/env.loader';
 
 @Injectable()
 export class IntentDetectionService {
+  private readonly logger = new Logger(IntentDetectionService.name);
+
   constructor(private readonly openaiService: OpenAiService) {}
 
   async detectIntent(
@@ -155,6 +157,49 @@ export class IntentDetectionService {
     return { id, items };
   }
 
+  async extractCartUpdateInfoFromMessage(
+    userMessage: string,
+  ): Promise<CartUpdateInfo | null> {
+    const prompt =
+      `Extra\u00e9 del siguiente mensaje la cantidad solicitada, el nombre del producto y la talla (si aplica): "${userMessage}". ` +
+      'Devolv\u00e9 un JSON con la estructura { "qty": <n\u00famero>, "name": "<producto>", "size": "<talla o null>" }.';
+
+    this.logger.debug(`Prompt enviado a OpenAI: ${prompt}`);
+    let raw: string;
+    try {
+      raw = await this.openaiService.askChat([{ role: 'user', content: prompt }]);
+    } catch (err) {
+      this.logger.warn(`Error al consultar OpenAI: ${err.message}`);
+      return null;
+    }
+
+    this.logger.debug(`Respuesta recibida: ${raw}`);
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed == null || parsed.qty == null || !parsed.name) {
+        this.logger.warn('Respuesta JSON sin qty o name');
+        return null;
+      }
+
+      const info: CartUpdateInfo = {
+        qty: Number(parsed.qty),
+        name: String(parsed.name).trim(),
+        size: parsed.size ?? null,
+      };
+
+      if (Number.isNaN(info.qty) || !info.name) {
+        this.logger.warn('Valores de qty o name inv\u00e1lidos');
+        return null;
+      }
+
+      this.logger.debug(`Objeto final extra\u00eddo: ${JSON.stringify(info)}`);
+      return info;
+    } catch (err) {
+      this.logger.warn('No se pudo analizar la respuesta de OpenAI');
+      return null;
+    }
+  }
+
   private heuristicIntent(text: string): IntentName | null {
     const lower = text.toLowerCase();
     const updateRegex = /\b(pon[eé]?|dame|hacelo|hacela|hacelo|ponlo|cambi[aá]|agrega|agregá|sum[aá]|quit[aá]|sac[aá]|actualiz[aá]|modifica|modificalo|pon\s*le)\b/;
@@ -167,4 +212,10 @@ export class IntentDetectionService {
 type ExtractedCartInfo = {
   id: number;
   items: { product_id: number; name: string; qty: number }[];
+};
+
+type CartUpdateInfo = {
+  qty: number;
+  name: string;
+  size?: string | null;
 };
