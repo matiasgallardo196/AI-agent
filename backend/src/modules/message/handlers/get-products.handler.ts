@@ -1,13 +1,13 @@
 import { IntentDetectionService } from '../../intent-detection/intent-detection.service';
-import { ProductsService } from '../../products/products.service';
 import { OpenAiService } from '../../openai/openai.service';
 import { SessionManagerService } from '../../session-manager/session-manager.service';
 import { IntentName } from '../../intent-detection/intents';
 import { ChatMessage } from '../../../utils/chat-message.type';
+import { BASE_URL } from 'src/config/env.loader';
+import axios from 'axios';
 
 export function createGetProductsHandler(
   intentDetectionService: IntentDetectionService,
-  productsService: ProductsService,
   openaiService: OpenAiService,
   sessionManager: SessionManagerService,
 ) {
@@ -18,9 +18,15 @@ export function createGetProductsHandler(
     ctx?: { query?: string | null },
   ) {
     const query = ctx?.query ?? (await intentDetectionService.extractQuery(text, history));
-    const products = query
-      ? await productsService.searchProductsSemantic(query)
-      : await productsService.getAllProducts();
+    const products = await axios
+      .get(BASE_URL, {
+        params: query ? { q: query } : {},
+      })
+      .then((res) => res.data)
+      .catch((err) => {
+        console.error('❌ Error al obtener productos:', err.message);
+        throw new Error('No se pudieron obtener los productos');
+      });
 
     if (sessionId) {
       const productSummary = products.map((p) => ({

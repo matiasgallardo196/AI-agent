@@ -1,14 +1,13 @@
 import { IntentDetectionService } from '../../intent-detection/intent-detection.service';
-import { CartsService } from '../../carts/carts.service';
 import { OpenAiService } from '../../openai/openai.service';
 import { SessionManagerService } from '../../session-manager/session-manager.service';
 import { IntentName } from '../../intent-detection/intents';
 import { ChatMessage } from '../../../utils/chat-message.type';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import axios from 'axios';
 
 export function createCreateCartHandler(
   intentDetectionService: IntentDetectionService,
-  cartsService: CartsService,
   openaiService: OpenAiService,
   sessionManager: SessionManagerService,
 ) {
@@ -21,7 +20,13 @@ export function createCreateCartHandler(
     const items = await intentDetectionService.extractCartItems(text, history);
     let cart;
     try {
-      cart = await cartsService.createCart(items);
+      const cart = await axios
+        .post('http://localhost:3002/carts', { items })
+        .then((res) => res.data)
+        .catch((err) => {
+          console.error('❌ Error al crear el carrito:', err.message);
+          throw new Error('No se pudo crear el carrito');
+        });
       if ('errors' in cart && ctx?.ajustarStock) {
         const adjusted = cartsService.adjustItemsForStock(
           items,
