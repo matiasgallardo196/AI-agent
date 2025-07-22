@@ -2,14 +2,12 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { OpenAiService } from '../openai/openai.service';
 import { INTENT_DESCRIPTIONS, IntentName, VALID_INTENTS } from './intents';
 import { ChatMessage } from '../../utils/chat-message.type';
-import { CartsService } from '../carts/carts.service';
+import axios from 'axios';
+import { BASE_URL } from 'src/config/env.loader';
 
 @Injectable()
 export class IntentDetectionService {
-  constructor(
-    private readonly openaiService: OpenAiService,
-    private readonly cartsService: CartsService,
-  ) {}
+  constructor(private readonly openaiService: OpenAiService) {}
 
   async detectIntent(
     text: string,
@@ -135,10 +133,15 @@ export class IntentDetectionService {
     const id = parseInt(cleaned, 10);
     if (isNaN(id)) return null;
 
-    const cart = await this.cartsService.findById(id);
-    if (!cart) return null;
+    try {
+      await axios.get(`${BASE_URL}/carts/${id}`);
+    } catch {
+      return null;
+    }
 
-    const items = await this.cartsService.getItemsWithProductInfo(id);
+    const items = await axios
+      .get(`${BASE_URL}/carts/${id}/items`)
+      .then((res) => res.data);
 
     return { id, items };
   }

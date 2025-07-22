@@ -19,7 +19,7 @@ export function createGetProductsHandler(
   ) {
     const query = ctx?.query ?? (await intentDetectionService.extractQuery(text, history));
     const products = await axios
-      .get(BASE_URL, {
+      .get(`${BASE_URL}/products`, {
         params: query ? { q: query } : {},
       })
       .then((res) => res.data)
