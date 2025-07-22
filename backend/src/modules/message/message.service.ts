@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { IntentDetectionService } from '../intent-detection/intent-detection.service';
-import { ProductsService } from '../products/products.service';
-import { CartsService } from '../carts/carts.service';
 import { OpenAiService } from '../openai/openai.service';
 import { IntentName } from '../intent-detection/intents';
 import { SessionManagerService } from '../session-manager/session-manager.service';
@@ -25,27 +23,22 @@ export class MessageService {
 
   constructor(
     private readonly intentDetectionService: IntentDetectionService,
-    private readonly productsService: ProductsService,
-    private readonly cartsService: CartsService,
     private readonly openaiService: OpenAiService,
     private readonly sessionManager: SessionManagerService,
   ) {
     this.handlers = {
       [IntentName.GetProducts]: createGetProductsHandler(
         this.intentDetectionService,
-        this.productsService,
         this.openaiService,
         this.sessionManager,
       ),
       [IntentName.CreateCart]: createCreateCartHandler(
         this.intentDetectionService,
-        this.cartsService,
         this.openaiService,
         this.sessionManager,
       ),
       [IntentName.UpdateCart]: createUpdateCartHandler(
         this.intentDetectionService,
-        this.cartsService,
         this.openaiService,
         this.sessionManager,
       ),

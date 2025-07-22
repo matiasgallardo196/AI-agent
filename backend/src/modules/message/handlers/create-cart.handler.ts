@@ -5,6 +5,7 @@ import { IntentName } from '../../intent-detection/intents';
 import { ChatMessage } from '../../../utils/chat-message.type';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
+import { BASE_URL } from 'src/config/env.loader';
 
 export function createCreateCartHandler(
   intentDetectionService: IntentDetectionService,
@@ -20,20 +21,13 @@ export function createCreateCartHandler(
     const items = await intentDetectionService.extractCartItems(text, history);
     let cart;
     try {
-      const cart = await axios
-        .post('http://localhost:3002/carts', { items })
+      cart = await axios
+        .post(`${BASE_URL}/carts`, { items })
         .then((res) => res.data)
         .catch((err) => {
           console.error('❌ Error al crear el carrito:', err.message);
           throw new Error('No se pudo crear el carrito');
         });
-      if ('errors' in cart && ctx?.ajustarStock) {
-        const adjusted = cartsService.adjustItemsForStock(
-          items,
-          'errors' in cart ? cart.errors : [],
-        );
-        cart = await cartsService.createCart(adjusted);
-      }
     } catch (err) {
       if (err instanceof NotFoundException || err instanceof BadRequestException) {
         return openaiService.rephraseForUser({

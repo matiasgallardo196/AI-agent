@@ -1,14 +1,14 @@
 import { IntentDetectionService } from '../../intent-detection/intent-detection.service';
-import { CartsService } from '../../carts/carts.service';
 import { OpenAiService } from '../../openai/openai.service';
 import { IntentName } from '../../intent-detection/intents';
 import { ChatMessage } from '../../../utils/chat-message.type';
 import { SessionManagerService } from '../../session-manager/session-manager.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import axios from 'axios';
+import { BASE_URL } from 'src/config/env.loader';
 
 export function createUpdateCartHandler(
   intentDetectionService: IntentDetectionService,
-  cartsService: CartsService,
   openaiService: OpenAiService,
   sessionManager: SessionManagerService,
 ) {
@@ -41,14 +41,9 @@ export function createUpdateCartHandler(
     //console.log('cartId:', cartInfo.id, 'items:', items);
     let cart;
     try {
-      cart = await cartsService.updateCartItems(cartInfo.id, items);
-      if ('errors' in cart && ctx?.ajustarStock) {
-        const adjusted = cartsService.adjustItemsForStock(
-          items,
-          'errors' in cart ? cart.errors : [],
-        );
-        cart = await cartsService.updateCartItems(cartInfo.id, adjusted);
-      }
+      cart = await axios
+        .patch(`${BASE_URL}/carts/${cartInfo.id}`, { items })
+        .then((res) => res.data);
     } catch (err) {
       if (err instanceof NotFoundException || err instanceof BadRequestException) {
         return openaiService.rephraseForUser({
