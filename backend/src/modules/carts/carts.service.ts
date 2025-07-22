@@ -83,7 +83,7 @@ export class CartsService {
   }
 
   async updateCartItems(cartId: number, items: { product_id: number; qty: number }[]) {
-    console.log('Updating cart items for cartId:', cartId, 'with items:', items);
+    //console.log('Updating cart items for cartId:', cartId, 'with items:', items);
     if (items.length === 0) {
       throw new BadRequestException('No se puede actualizar con una lista vacía');
     }
