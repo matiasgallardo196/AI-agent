@@ -33,7 +33,7 @@ export function createUpdateCartHandler(
       logger.debug(
         `Analyzing history messages: ${JSON.stringify(history.slice(-5))}`,
       );
-      const inferred = await getCartFromSessionHistory(history);
+      const inferred = await getCartFromSessionHistory(history, openaiService);
       logger.debug(`Inferred from history: ${JSON.stringify(inferred)}`);
       if (inferred) {
         cartInfo = inferred;
