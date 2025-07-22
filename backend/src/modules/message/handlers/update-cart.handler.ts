@@ -2,6 +2,7 @@ import { IntentDetectionService } from '../../intent-detection/intent-detection.
 import { OpenAiService } from '../../openai/openai.service';
 import { IntentName } from '../../intent-detection/intents';
 import { ChatMessage } from '../../../utils/chat-message.type';
+import { getCartFromSessionHistory } from '../../../utils/cart-history.util';
 import { SessionManagerService } from '../../session-manager/session-manager.service';
 import { BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import axios from 'axios';
@@ -19,17 +20,42 @@ export function createUpdateCartHandler(
     history: ChatMessage[],
     ctx?: { ajustarStock?: boolean },
   ) {
-    const cartInfo = await intentDetectionService.extractCartInfo(text, history);
+    let cartInfo = await intentDetectionService.extractCartInfo(text, history);
     logger.debug(`Cart info extracted: ${JSON.stringify(cartInfo)}`);
     if (!cartInfo) {
-      return openaiService.rephraseForUser({
-        data: null,
-        intention: IntentName.UpdateCart,
-        userMessage: 'no_cart_found',
-        history,
-      });
+      logger.warn('No cart info extracted by OpenAI, trying session history');
+      logger.debug(
+        `Analyzing history messages: ${JSON.stringify(history.slice(-5))}`,
+      );
+      const inferred = await getCartFromSessionHistory(history);
+      logger.debug(`Inferred from history: ${JSON.stringify(inferred)}`);
+      if (inferred) {
+        cartInfo = inferred;
+      } else {
+        const lastCartMsg = history
+          .slice()
+          .reverse()
+          .find((m) => /carrito generado/i.test(m.content));
+        logger.warn(
+          `CartId not found. Last cart message: ${lastCartMsg?.content}`,
+        );
+        if (lastCartMsg) {
+          logger.warn('Items could not be inferred from last cart message');
+        }
+        return openaiService.rephraseForUser({
+          data: null,
+          intention: IntentName.UpdateCart,
+          userMessage: 'no_cart_found',
+          history,
+        });
+      }
     }
-    const items = await intentDetectionService.extractCartItems(text, history, cartInfo.items);
+    const items = await intentDetectionService.extractCartItems(
+      text,
+      history,
+      cartInfo.items,
+    );
+    logger.debug(`Items extracted for update: ${JSON.stringify(items)}`);
     if (items.length === 0) {
       return openaiService.rephraseForUser({
         data: null,
@@ -39,11 +65,13 @@ export function createUpdateCartHandler(
       });
     }
     logger.log(`PATCH ${BASE_URL}/carts/${cartInfo.id}`);
+    logger.debug(`Payload: ${JSON.stringify({ items })}`);
     let cart;
     try {
       cart = await axios
         .patch(`${BASE_URL}/carts/${cartInfo.id}`, { items })
         .then((res) => res.data);
+      logger.debug(`API response: ${JSON.stringify(cart)}`);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
         logger.error(
@@ -58,6 +86,7 @@ export function createUpdateCartHandler(
           });
         }
       }
+      logger.error(`Update cart failed: ${err.message}`);
       throw err;
     }
     if (sessionId) {
