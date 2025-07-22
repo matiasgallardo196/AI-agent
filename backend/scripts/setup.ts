@@ -15,14 +15,16 @@ async function main() {
     run('npx prisma db push');
 
     // 2. Forzar el tipo vector(1536) si es necesario
-    const result = await prisma.$queryRawUnsafe<{ exists: boolean }[]>(`
+    const result = (await prisma.$queryRawUnsafe(
+      `
       SELECT EXISTS (
         SELECT 1
         FROM information_schema.columns
         WHERE table_name = 'products'
         AND column_name = 'embedding'
       ) as exists;
-    `);
+    `
+    )) as { exists: boolean }[];
 
     if (result[0]?.exists) {
       console.log('📐 Corrigiendo tipo embedding a vector(1536)...');
