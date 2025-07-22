@@ -6,4 +6,9 @@ export class AppController {
   getHealth() {
     return { status: 'ok' };
   }
+
+  @Get()
+  getRoot(): string {
+    return 'API REST corriendo';
+  }
 }
