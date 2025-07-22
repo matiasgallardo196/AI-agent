@@ -32,15 +32,24 @@ export class IntentDetectionService {
       console.error('❌ Error en detectIntent:', err.message || err);
       return { name: IntentName.Fallback, query: null };
     }
+    let intent: IntentName = IntentName.Fallback;
+    let query: string | null = null;
     try {
       const parsed = JSON.parse(raw);
-      return {
-        name: this.normalizeIntent(parsed.intent),
-        query: parsed.query ?? null,
-      };
+      intent = this.normalizeIntent(parsed.intent);
+      query = parsed.query ?? null;
     } catch {
-      return { name: IntentName.Fallback, query: null };
+      intent = IntentName.Fallback;
     }
+
+    if (intent === IntentName.Fallback) {
+      const heuristic = this.heuristicIntent(text);
+      if (heuristic) {
+        intent = heuristic;
+      }
+    }
+
+    return { name: intent, query };
   }
 
   async extractQuery(text: string, history: ChatMessage[] = []): Promise<string | null> {
@@ -144,6 +153,15 @@ export class IntentDetectionService {
       .then((res) => res.data);
 
     return { id, items };
+  }
+
+  private heuristicIntent(text: string): IntentName | null {
+    const lower = text.toLowerCase();
+    const updateRegex = /\b(pon[eé]?|dame|hacelo|hacela|hacelo|ponlo|cambi[aá]|agrega|agregá|sum[aá]|quit[aá]|sac[aá]|actualiz[aá]|modifica|modificalo|pon\s*le)\b/;
+    if (updateRegex.test(lower) && /\d+/.test(lower)) {
+      return IntentName.UpdateCart;
+    }
+    return null;
   }
 }
 type ExtractedCartInfo = {

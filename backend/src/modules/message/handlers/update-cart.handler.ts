@@ -20,7 +20,13 @@ export function createUpdateCartHandler(
     history: ChatMessage[],
     ctx?: { ajustarStock?: boolean },
   ) {
-    let cartInfo = await intentDetectionService.extractCartInfo(text, history);
+    const analysisText = ctx?.ajustarStock
+      ? [...history].reverse().find((m) => m.role === 'user' && m.content !== text)?.content || text
+      : text;
+    let cartInfo = await intentDetectionService.extractCartInfo(
+      analysisText,
+      history,
+    );
     logger.debug(`Cart info extracted: ${JSON.stringify(cartInfo)}`);
     if (!cartInfo) {
       logger.warn('No cart info extracted by OpenAI, trying session history');
@@ -51,7 +57,7 @@ export function createUpdateCartHandler(
       }
     }
     const items = await intentDetectionService.extractCartItems(
-      text,
+      analysisText,
       history,
       cartInfo.items,
     );
@@ -66,6 +72,26 @@ export function createUpdateCartHandler(
     }
     logger.log(`PATCH ${BASE_URL}/carts/${cartInfo.id}`);
     logger.debug(`Payload: ${JSON.stringify({ items })}`);
+    items.forEach((i) =>
+      logger.log(`Requested qty for product ${i.product_id}: ${i.qty}`),
+    );
+
+    if (ctx?.ajustarStock) {
+      logger.debug('Adjusting quantities based on available stock');
+      for (const item of items) {
+        try {
+          const prod = await axios
+            .get(`${BASE_URL}/products/${item.product_id}`)
+            .then((res) => res.data);
+          logger.debug(`Stock for ${item.product_id}: ${prod.stock}`);
+          item.qty = Math.min(item.qty, prod.stock);
+        } catch (e) {
+          logger.warn(
+            `Could not fetch stock for product ${item.product_id}: ${e.message}`,
+          );
+        }
+      }
+    }
     let cart;
     try {
       cart = await axios
@@ -77,6 +103,37 @@ export function createUpdateCartHandler(
         logger.error(
           `HTTP ${err.response.status} PATCH ${BASE_URL}/carts/${cartInfo.id} - ${err.message}`,
         );
+        if (
+          err.response.status === 400 &&
+          /no hay stock suficiente/i.test(err.response.data?.message || '')
+        ) {
+          const stocks = await Promise.all(
+            items.map(async (it) => {
+              const prod = await axios
+                .get(`${BASE_URL}/products/${it.product_id}`)
+                .then((r) => r.data);
+              return { product_id: it.product_id, stock: prod.stock };
+            }),
+          );
+          stocks.forEach((s) =>
+            logger.warn(`Stock available for ${s.product_id}: ${s.stock}`),
+          );
+          if (sessionId) {
+            sessionManager.setPendingAction(
+              sessionId,
+              'adjust_stock_and_update_cart',
+            );
+            sessionManager.setLastIntent(sessionId, 'update_cart_error');
+          }
+          const response = await openaiService.rephraseForUser({
+            data: { errors: stocks },
+            intention: IntentName.UpdateCart,
+            userMessage: text,
+            history,
+          });
+          logger.log(`Final response: ${response}`);
+          return response;
+        }
         if (err.response.status === 404 || err.response.status === 400) {
           return openaiService.rephraseForUser({
             data: { error: err.message },
@@ -97,11 +154,13 @@ export function createUpdateCartHandler(
         sessionManager.clearPendingAction(sessionId);
       }
     }
-    return openaiService.rephraseForUser({
+    const finalResponse = await openaiService.rephraseForUser({
       data: cart,
       intention: IntentName.UpdateCart,
       userMessage: text,
       history,
     });
+    logger.log(`Final response: ${finalResponse}`);
+    return finalResponse;
   };
 }
