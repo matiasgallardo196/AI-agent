@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
-import { ChatMessage } from '../../utils/chat-message.type';
-import { PromptBuilder } from '../../utils/prompt-builder';
 import { openaiConfig } from '../../config/openai.config';
 import { OPENAI_API_KEY } from 'src/config/env.loader';
 
@@ -20,60 +18,6 @@ export class OpenAiService {
       timeout: openaiConfig.timeoutMs,
       maxRetries: openaiConfig.maxRetries,
     });
-  }
-
-  async askChat(
-    messages: ChatMessage[],
-    temperature: number = openaiConfig.temperature,
-  ): Promise<string> {
-    try {
-      //console.log(`📤 Enviando a OpenAI:`, { model: openaiConfig.model, messages, temperature });
-
-      const res = await this.client.chat.completions.create({
-        model: openaiConfig.model,
-        messages,
-        temperature,
-      });
-      const choice = res.choices[0];
-      //console.log(`📥 Respuesta de OpenAI:`, { choice });
-      const content = choice?.message?.content;
-
-      if (!content) {
-        throw new Error('Respuesta inválida del modelo: content vacío o nulo');
-      }
-
-      //console.log(`📥 Respuesta de OpenAI:`, content.trim());
-      return content.trim();
-    } catch (err) {
-      console.error('❌ Error en askChat:', err.message || err);
-      return 'Hubo un problema técnico al contactar al asistente. Probá nuevamente en unos segundos.';
-    }
-  }
-
-  // Método general: recibe prompt y devuelve string plano
-  async askRaw(prompt: string, temperature?: number): Promise<string> {
-    return this.askChat([{ role: 'user', content: prompt }], temperature);
-  }
-
-  // Método específico: transforma un resultado en una respuesta natural
-  async rephraseForUser(
-    params: { data: any; intention: string; userMessage?: string; history?: ChatMessage[] },
-    temperature?: number,
-  ): Promise<string> {
-    const prompt = PromptBuilder.buildPrompt(params);
-
-    try {
-      const response = await this.askChat(
-        [...(params.history || []), { role: 'user', content: prompt }],
-        temperature,
-      );
-      return response;
-    } catch (err) {
-      console.error('❌ Error en rephraseForUser:', err.message || err);
-      return Array.isArray(params.data)
-        ? params.data.map((p) => p.name).join(', ')
-        : JSON.stringify(params.data);
-    }
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
