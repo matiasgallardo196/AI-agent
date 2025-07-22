@@ -15,6 +15,13 @@ export class ProductsRepository {
             ],
           }
         : undefined,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        stock: true,
+      },
     });
     return peticion;
   }
@@ -22,6 +29,13 @@ export class ProductsRepository {
   async findById(id: number) {
     return await this.prisma.product.findUnique({
       where: { id },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        stock: true,
+      },
     });
   }
 }

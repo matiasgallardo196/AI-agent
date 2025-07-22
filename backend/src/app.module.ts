@@ -7,6 +7,7 @@ import { OpenAiModule } from './modules/openai/openai.module';
 import { IntentDetectionModule } from './modules/intent-detection/intent-detection.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
+import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ConfigModule } from '@nestjs/config';
     OpenAiModule,
     IntentDetectionModule,
     PrismaModule,
+    WhatsappModule,
   ],
   controllers: [AppController],
   providers: [],

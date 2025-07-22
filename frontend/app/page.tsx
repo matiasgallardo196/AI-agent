@@ -73,7 +73,7 @@ export default function ChatPage() {
       }
 
       data = await response.json();
-      console.log("Response from server:", data);
+      //console.log("Response from server:", data);
       const botMessage: Message = {
         id: Date.now() + 1,
         text: data.response || data.message || "No response received",
@@ -88,8 +88,7 @@ export default function ChatPage() {
       const errorMessage: Message = {
         id: Date.now() + 1,
         text:
-          (error as Error).message ||
-          "Ocurrió un error al enviar tu mensaje",
+          (error as Error).message || "Ocurrió un error al enviar tu mensaje",
         sender: "bot",
         timestamp: new Date(),
       };
