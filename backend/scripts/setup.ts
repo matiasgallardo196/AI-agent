@@ -12,16 +12,14 @@ async function main() {
   try {
     await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS vector`);
     run('npx prisma db push');
-    run('npx prisma generate');
 
-    const result = await prisma.$queryRawUnsafe<{ exists: boolean }[]>(`
-      SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'products'
-        AND column_name = 'embedding'
-      ) as exists;
-    `);
+    const result = (await prisma.$queryRawUnsafe(`
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'products'
+    AND column_name = 'embedding'
+  ) as exists;
+`)) as { exists: boolean }[];
 
     if (result[0]?.exists) {
       console.log('📐 Corrigiendo tipo embedding a vector(1536)...');

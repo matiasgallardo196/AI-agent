@@ -117,6 +117,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
 # 3. Instalar dependencias y preparar datos
 cd backend
 npm install
+npx prisma generate
 npm run setup   # Crea base, carga productos, genera embeddings
 
 # 4. Ejecutar frontend y backend (en terminales separadas)
