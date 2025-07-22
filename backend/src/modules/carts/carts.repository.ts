@@ -106,6 +106,7 @@ export class CartsRepository {
         this.prisma.product.update({
           where: { id: item.product_id },
           data: { stock: { decrement: item.qty } },
+          select: { id: true },
         }),
       ),
     );
@@ -117,6 +118,7 @@ export class CartsRepository {
         this.prisma.product.update({
           where: { id: item.product_id },
           data: { stock: { increment: -item.delta } },
+          select: { id: true },
         }),
       ),
     );
