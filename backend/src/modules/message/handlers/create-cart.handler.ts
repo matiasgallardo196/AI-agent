@@ -3,7 +3,7 @@ import { OpenAiService } from '../../openai/openai.service';
 import { SessionManagerService } from '../../session-manager/session-manager.service';
 import { IntentName } from '../../intent-detection/intents';
 import { ChatMessage } from '../../../utils/chat-message.type';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { BASE_URL } from 'src/config/env.loader';
 
@@ -12,6 +12,7 @@ export function createCreateCartHandler(
   openaiService: OpenAiService,
   sessionManager: SessionManagerService,
 ) {
+  const logger = new Logger('CreateCartHandler');
   return async function handleCreateCart(
     text: string,
     sessionId: string | undefined,
@@ -19,23 +20,29 @@ export function createCreateCartHandler(
     ctx?: { ajustarStock?: boolean },
   ) {
     const items = await intentDetectionService.extractCartItems(text, history);
+    logger.log(`POST ${BASE_URL}/carts`);
     let cart;
     try {
       cart = await axios
         .post(`${BASE_URL}/carts`, { items })
         .then((res) => res.data)
         .catch((err) => {
-          console.error('❌ Error al crear el carrito:', err.message);
+          logger.error(`Error POST ${BASE_URL}/carts: ${err.message}`);
           throw new Error('No se pudo crear el carrito');
         });
     } catch (err) {
-      if (err instanceof NotFoundException || err instanceof BadRequestException) {
-        return openaiService.rephraseForUser({
-          data: { error: err.message },
-          intention: IntentName.CreateCart,
-          userMessage: text,
-          history,
-        });
+      if (axios.isAxiosError(err) && err.response) {
+        logger.error(
+          `HTTP ${err.response.status} POST ${BASE_URL}/carts - ${err.message}`,
+        );
+        if (err.response.status === 404 || err.response.status === 400) {
+          return openaiService.rephraseForUser({
+            data: { error: err.message },
+            intention: IntentName.CreateCart,
+            userMessage: text,
+            history,
+          });
+        }
       }
       throw err;
     }

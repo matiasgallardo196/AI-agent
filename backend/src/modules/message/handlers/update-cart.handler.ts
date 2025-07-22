@@ -3,7 +3,7 @@ import { OpenAiService } from '../../openai/openai.service';
 import { IntentName } from '../../intent-detection/intents';
 import { ChatMessage } from '../../../utils/chat-message.type';
 import { SessionManagerService } from '../../session-manager/session-manager.service';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { BASE_URL } from 'src/config/env.loader';
 
@@ -12,6 +12,7 @@ export function createUpdateCartHandler(
   openaiService: OpenAiService,
   sessionManager: SessionManagerService,
 ) {
+  const logger = new Logger('UpdateCartHandler');
   return async function handleUpdateCart(
     text: string,
     sessionId: string | undefined,
@@ -19,7 +20,7 @@ export function createUpdateCartHandler(
     ctx?: { ajustarStock?: boolean },
   ) {
     const cartInfo = await intentDetectionService.extractCartInfo(text, history);
-    //console.log('Cart info extracted:', cartInfo);
+    logger.debug(`Cart info extracted: ${JSON.stringify(cartInfo)}`);
     if (!cartInfo) {
       return openaiService.rephraseForUser({
         data: null,
@@ -37,21 +38,25 @@ export function createUpdateCartHandler(
         history,
       });
     }
-    //console.log('Text for update cart:', text);
-    //console.log('cartId:', cartInfo.id, 'items:', items);
+    logger.log(`PATCH ${BASE_URL}/carts/${cartInfo.id}`);
     let cart;
     try {
       cart = await axios
         .patch(`${BASE_URL}/carts/${cartInfo.id}`, { items })
         .then((res) => res.data);
     } catch (err) {
-      if (err instanceof NotFoundException || err instanceof BadRequestException) {
-        return openaiService.rephraseForUser({
-          data: { error: err.message },
-          intention: IntentName.UpdateCart,
-          userMessage: text,
-          history,
-        });
+      if (axios.isAxiosError(err) && err.response) {
+        logger.error(
+          `HTTP ${err.response.status} PATCH ${BASE_URL}/carts/${cartInfo.id} - ${err.message}`,
+        );
+        if (err.response.status === 404 || err.response.status === 400) {
+          return openaiService.rephraseForUser({
+            data: { error: err.message },
+            intention: IntentName.UpdateCart,
+            userMessage: text,
+            history,
+          });
+        }
       }
       throw err;
     }
