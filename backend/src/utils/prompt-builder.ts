@@ -103,6 +103,16 @@ export class PromptBuilder {
             `.trim();
         }
 
+        if (cleaned && 'errors' in cleaned) {
+          const errores = cleaned.errors
+            .map(
+              (e: any) =>
+                `ID ${e.product_id ?? e.productId}: solo ${e.stock} disponibles`,
+            )
+            .join('\n');
+          return `Actualmente ${errores}. ¿Querés que actualice el carrito con esa cantidad?`;
+        }
+
         return `El usuario modificó su carrito. Los productos ahora son:\n\n${summary}\nConfirma los cambios de forma clara.`;
 
       case 'fallback':
