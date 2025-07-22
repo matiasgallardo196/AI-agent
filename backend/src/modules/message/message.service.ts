@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { IntentDetectionService } from '../intent-detection/intent-detection.service';
 import { OpenAiService } from '../openai/openai.service';
 import { IntentName } from '../intent-detection/intents';
@@ -11,6 +11,7 @@ import { createFallbackHandler } from './handlers/fallback.handler';
 
 @Injectable()
 export class MessageService {
+  private readonly logger = new Logger(MessageService.name);
   private handlers: Record<
     IntentName,
     (
@@ -63,9 +64,10 @@ export class MessageService {
 
   async processUserMessage(text: string, sessionId?: string) {
     const history = sessionId ? this.sessionManager.getMessages(sessionId) : [];
-    //console.log(`Processing message: "${text}"`);
-    //console.log('History for session:', history);
+    this.logger.log(`User message: "${text}"`);
+    this.logger.debug(`History: ${JSON.stringify(history)}`);
     let intent = await this.intentDetectionService.detectIntent(text, history);
+    this.logger.log(`Detected intent: ${intent.name}`);
     const context: Record<string, any> = {};
     if (intent.query !== undefined) {
       context.query = intent.query;
@@ -90,8 +92,7 @@ export class MessageService {
       });
     }
     const handler = this.handlers[intent.name] ?? this.handlers[IntentName.Fallback];
-    //console.log(`Detected intent: ${intent.name}`);
-    //console.log('Updated history:', updatedHistory);
+    this.logger.log(`Executing handler for intent: ${intent.name}`);
     if (sessionId) {
       this.sessionManager.setLastIntent(sessionId, intent.name);
     }
