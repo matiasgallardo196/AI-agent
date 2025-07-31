@@ -14,7 +14,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AI Shopping Assistant",
-  description: "Chat with our AI shopping assistant",
+  description: "Chat with our AI shopping assistant powered by OpenAI",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  themeColor: "#667eea",
+  viewport: "width=device-width, initial-scale=1",
 };
 
 export default function RootLayout({

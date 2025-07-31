@@ -121,6 +121,7 @@ html {
   z-index: 1;
   height: calc(100vh - 20px);
   max-height: calc(100vh - 20px);
+  border: 2px solid rgba(102, 126, 234, 0.3);
 }
 
 /* Header styling */
@@ -188,6 +189,14 @@ html {
 .chat-input:disabled::placeholder {
   color: var(--text-muted);
   opacity: 0.5;
+}
+
+/* Input Form container */
+.chat-container > div:last-child {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 0 0 16px 16px;
 }
 
 /* Button improvements */
@@ -294,6 +303,7 @@ html {
     background: rgba(15, 23, 42, 0.95);
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3),
       0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(59, 130, 246, 0.4);
   }
 
   .chat-header {
@@ -314,5 +324,10 @@ html {
 
   .typing-indicator {
     background: rgba(30, 41, 59, 0.9);
+  }
+
+  .chat-container > div:last-child {
+    background: rgba(15, 23, 42, 0.95);
+    border-top: 1px solid rgba(59, 130, 246, 0.3);
   }
 }

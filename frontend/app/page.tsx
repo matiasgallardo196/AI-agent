@@ -164,7 +164,7 @@ export default function ChatPage() {
                     style={{ animationDelay: "0.2s" }}
                   ></div>
                 </div>
-                <span className="text-xs">AI is thinking...</span>
+                <span className="text-xs">typing...</span>
               </div>
             </div>
           </div>
@@ -189,7 +189,7 @@ export default function ChatPage() {
             disabled={isLoading || !input.trim()}
             className="px-4 py-2 rounded-lg font-medium chat-button text-sm"
           >
-            {isLoading ? "Sending..." : "Send"}
+            {isLoading ? "sending..." : "Send"}
           </button>
         </form>
       </div>
