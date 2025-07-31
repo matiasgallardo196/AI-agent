@@ -1,54 +1,48 @@
-# Technical Documentation of the AI Agent
+# Technical Documentation – AI Agent
 
 ## 1. Conceptual Design
 
 ### 1.1 Assistant Flow Map
 
-**Scenario 1: Search Products**
+**Scenario 1: Search products**
 
-```
-User: "I want to see pants"
-   ⯆
-POST /message { message: "I want to see pants" }
-   ⯆
-OpenAI detects intention: get_products
-   ⯆
-GET /products?q=pants
-   ⯆
+User: “I want to see pants”  
+ ⯆  
+POST /message `{ message: "I want to see pants" }`  
+ ⯆  
+OpenAI detects intent: `get_products`  
+ ⯆  
+GET /products?q=pantalones  
+ ⯆  
 Returns product list
-```
 
-**Scenario 2: Create Cart**
+**Scenario 2: Create cart**
 
-```
-User: "Add 2 Green Pants Size XXL to cart"
-   ⯆
-POST /message { message: "Add 2 Green Pants Size XXL to cart" }
-   ⯆
-OpenAI detects intention: create_cart
-   ⯆
-POST /carts
-Body: { items: [{ product_id: 1, qty: 2 }] }
-```
+User: “Add 2 Green Pants Size XXL to the cart”  
+ ⯆  
+POST /message `{ message: "Add 2 Green Pants Size XXL to the cart" }`  
+ ⯆  
+OpenAI detects intent: `create_cart`  
+ ⯆  
+POST /carts  
+Body: `{ items: [{ product_id: 1, qty: 2 }] }`
 
-**Scenario 3: Modify Cart**
+**Scenario 3: Update cart**
 
-```
-User: "Better put just one"
-   ⯆
-POST /message { message: "Better put just one" }
-   ⯆
-OpenAI detects intention: update_cart
-   ⯆
-PATCH /carts/:id
-Body: { items: [{ product_id: 1, qty: 1 }] }
-```
+User: “Better just add one”  
+ ⯆  
+POST /message `{ message: "Better just add one" }`  
+ ⯆  
+OpenAI detects intent: `update_cart`  
+ ⯆  
+PATCH /carts/:id  
+Body: `{ items: [{ product_id: 1, qty: 1 }] }`
 
 ### 1.2 High-Level Architecture
 
 ```
 ┌────────────────────────────┐
-│      End User              │
+│       End User             │
 └────────────┬───────────────┘
              ▼
 ┌──────────────────────────────────────────────┐
@@ -60,7 +54,7 @@ Body: { items: [{ product_id: 1, qty: 1 }] }
              ▼
 ┌────────────────────────────┐
 │ NestJS Backend             │
-│ - Detects intention        │
+│ - Detects intent           │
 │ - Executes REST logic      │
 └────────────┬───────────────┘
              ▼
@@ -68,27 +62,27 @@ Body: { items: [{ product_id: 1, qty: 1 }] }
 │ OpenAI (Embeddings + Chat) │
 └────────────┬───────────────┘
              ▼
-┌─────────────────────────────────────────┐
-│PostgreSQL (Supabase + pgvector)+ Prisma │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ PostgreSQL (Supabase + pgvector) + Prisma    │
+└──────────────────────────────────────────────┘
 ```
 
-### 1.3 Design Viability
+### 1.3 Design Feasibility
 
 - Modular architecture (NestJS with separate services)
-- Use of standard HTTP, ideal for REST integrations
-- PostgreSQL allows scalability and complex queries
-- Supabase facilitates the use of managed PostgreSQL with extensions like `pgvector`, fundamental for semantic searches with embeddings
-- Prisma simplifies database access and migrations
-- Clean interface: a single `/message` endpoint handles everything
+- Standard HTTP usage, ideal for REST integrations
+- PostgreSQL enables scalability and complex queries
+- Supabase offers managed PostgreSQL with extensions like `pgvector`, essential for semantic search using embeddings
+- Prisma simplifies DB access and migrations
+- Clean interface: a single `/message` endpoint handles all requests
 
 ### 1.4 Suggested Metrics
 
-- **Conversion rate:** product queries / carts created
-- **Average response time** of the AI agent (from message to response)
-- **Stock errors:** percentage of requests with insufficient stock
+- **Conversion rate:** product queries vs. carts created
+- **Average agent response time** (from message to reply)
+- **Stock errors:** percentage of requests failing due to lack of stock
 
----
+## 2. Execution Instructions
 
 ## 2. Execution Instructions
 
@@ -105,7 +99,8 @@ Body: { items: [{ product_id: 1, qty: 1 }] }
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 
-# 2. Configure .env
+# 2. Edit environment files
+
 # backend/.env
 DATABASE_URL=postgresql://postgres:[YOUR_PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres
 OPENAI_API_KEY=sk-...
@@ -118,14 +113,14 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
 cd backend
 npm install
 npx prisma generate
-npm run setup   # Creates database, loads products, generates embeddings
+npm run setup   # Creates DB, loads products, generates embeddings
 
-# 4. Run frontend and backend (in separate terminals)
+# 4. Run backend and frontend (in separate terminals)
 cd backend && npm run start:dev
 cd frontend && npm install && npm run dev
 ```
 
----
+### 2.3 Database Schema
 
 ### 2.3 Database Schema
 
@@ -149,13 +144,17 @@ The database was modeled with Prisma ORM and hosted on Supabase to take advantag
 - **Query parameters:** `q` (optional, string)
 - **Response (200):**
 
+### `GET /products`
+
+**Description:** Lists products, supports optional search with `?q=`  
+**Query Params:** `q` (optional string)  
+**Response (200):**
+
 ```json
 [{ "id": 1, "name": "Green Pants", "price": 25.5, "stock": 12 }]
 ```
 
-- **Errors:** 404 Not Found 500 internal error
-
----
+**Errors:** `404 Not Found`, `500 Internal Error`
 
 ### GET /products/:id
 
@@ -167,36 +166,32 @@ The database was modeled with Prisma ORM and hosted on Supabase to take advantag
 { "id": 1, "name": "Green Pants", "price": 25.5, "stock": 12 }
 ```
 
-- **Errors:** 404 if not exists
+**Errors:** `404 Not Found`
 
----
+### `POST /carts`
 
-### POST /carts
-
-- **Description:** Creates cart with products
-- **Body:**
+**Description:** Creates a cart with products  
+**Body:**
 
 ```json
 { "items": [{ "product_id": 1, "qty": 2 }] }
 ```
 
-- **Response (201):** created cart
-- **Errors:** 400 (empty), 404 (product not exists), 422 (no stock)
+**Response (201):** Cart created  
+**Errors:** `400` (empty), `404` (product not found), `422` (out of stock)
 
----
+### `PATCH /carts/:id`
 
-### PATCH /carts/\:id
+**Description:** Updates an existing cart  
+**Path Param:** `id` (cart ID)  
+**Body:** same as POST  
+**Response (200):** Cart updated  
+**Errors:** `400`, `404`, `422` (insufficient stock)
 
-- **Description:** Modifies an existing cart
-- **Path parameters:** `id` of the cart
-- **Body:** same as POST
-- **Response (200):** updated cart
-- **Errors:** 400, 404, 422 (insufficient stock)
+## 🧪 Online Demo
 
----
-
-> Online demo:
->
-> - Frontend: [https://desafio-tecnico-cse-laburen-com.vercel.app/](https://desafio-tecnico-cse-laburen-com.vercel.app/)
-> - Backend: [https://desafio-tecnico-cse-laburen-com.onrender.com](https://desafio-tecnico-cse-laburen-com.onrender.com)
-> - WhatsApp (Twilio sandbox): send the message **join feed-individual** to the number **+1 415 523 8886** from your WhatsApp to join. Then you can interact with the agent normally (for example: "I want to see pants").
+- **Frontend:** [https://desafio-tecnico-cse-laburen-com.vercel.app/](https://desafio-tecnico-cse-laburen-com.vercel.app/)
+- **Backend:** [https://desafio-tecnico-cse-laburen-com.onrender.com](https://desafio-tecnico-cse-laburen-com.onrender.com)
+- **WhatsApp (Twilio Sandbox):**  
+  Send the message `join feed-individual` to **+1 415 523 8886** from your WhatsApp to join.  
+  After that, you can interact with the agent as usual (e.g., “I want to see pants”).
