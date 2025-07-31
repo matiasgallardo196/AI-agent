@@ -1,9 +1,15 @@
 import { Twilio } from 'twilio';
 import { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_NUMBER } from './env.loader';
 
-if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_NUMBER) {
-  throw new Error('❌ Twilio credentials are not configured properly');
+// Check if Twilio credentials are available
+const isTwilioConfigured = TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_NUMBER;
+
+if (!isTwilioConfigured) {
+  console.warn('⚠️ Twilio credentials not configured. WhatsApp functionality will be disabled.');
 }
 
-export const twilioClient = new Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-export const whatsappFrom = `whatsapp:${TWILIO_WHATSAPP_NUMBER}`;
+export const twilioClient = isTwilioConfigured
+  ? new Twilio(TWILIO_ACCOUNT_SID!, TWILIO_AUTH_TOKEN!)
+  : null;
+
+export const whatsappFrom = isTwilioConfigured ? `whatsapp:${TWILIO_WHATSAPP_NUMBER}` : null;

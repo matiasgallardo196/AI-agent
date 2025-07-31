@@ -1,67 +1,67 @@
-# Documentación Técnica del Agente de IA
+# Technical Documentation of the AI Agent
 
-## 1. Diseño Conceptual
+## 1. Conceptual Design
 
-### 1.1 Mapa de flujo del asistente
+### 1.1 Assistant Flow Map
 
-**Escenario 1: Buscar productos**
-
-```
-Usuario: "Quiero ver pantalones"
-   ⯆
-POST /message { message: "Quiero ver pantalones" }
-   ⯆
-OpenAI detecta intención: get_products
-   ⯆
-GET /products?q=pantalones
-   ⯆
-Devuelve lista de productos
-```
-
-**Escenario 2: Crear carrito**
+**Scenario 1: Search Products**
 
 ```
-Usuario: "Agregá 2 Pantalón Verde Talla XXL al carrito"
+User: "I want to see pants"
    ⯆
-POST /message { message: "Agregá 2 Pantalón Verde Talla XXL al carrito" }
+POST /message { message: "I want to see pants" }
    ⯆
-OpenAI detecta intención: create_cart
+OpenAI detects intention: get_products
+   ⯆
+GET /products?q=pants
+   ⯆
+Returns product list
+```
+
+**Scenario 2: Create Cart**
+
+```
+User: "Add 2 Green Pants Size XXL to cart"
+   ⯆
+POST /message { message: "Add 2 Green Pants Size XXL to cart" }
+   ⯆
+OpenAI detects intention: create_cart
    ⯆
 POST /carts
 Body: { items: [{ product_id: 1, qty: 2 }] }
 ```
 
-**Escenario 3: Modificar carrito**
+**Scenario 3: Modify Cart**
 
 ```
-Usuario: "Mejor poné uno solo"
+User: "Better put just one"
    ⯆
-POST /message { message: "Mejor poné uno solo" }
+POST /message { message: "Better put just one" }
    ⯆
-OpenAI detecta intención: update_cart
+OpenAI detects intention: update_cart
    ⯆
 PATCH /carts/:id
 Body: { items: [{ product_id: 1, qty: 1 }] }
 ```
 
-### 1.2 Arquitectura de alto nivel
+### 1.2 High-Level Architecture
 
 ```
 ┌────────────────────────────┐
-│      Usuario final         │
+│      End User              │
 └────────────┬───────────────┘
              ▼
 ┌──────────────────────────────────────────────┐
 │ Chat Web (React) / WhatsApp (Twilio API)     │
-│ - Captura el input del usuario               │
-│ - Envía mensajes al backend vía HTTP         │
+│ - Captures user input                        │
+│ - Sends messages to backend via HTTP         │
 └────────────┬─────────────────────────────────┘
              │ POST /message
              ▼
 ┌────────────────────────────┐
 │ NestJS Backend             │
-│ - Detecta intención        │
-│ - Ejecuta lógica REST      │
+│ - Detects intention        │
+│ - Executes REST logic      │
 └────────────┬───────────────┘
              ▼
 ┌────────────────────────────┐
@@ -73,130 +73,130 @@ Body: { items: [{ product_id: 1, qty: 1 }] }
 └─────────────────────────────────────────┘
 ```
 
-### 1.3 Viabilidad del diseño
+### 1.3 Design Viability
 
-- Arquitectura modular (NestJS con servicios separados)
-- Uso de HTTP estándar, ideal para integraciones REST
-- PostgreSQL permite escalabilidad y queries complejas
-- Supabase facilita el uso de PostgreSQL administrado con extensiones como `pgvector`, fundamentales para búsquedas semánticas con embeddings
-- Prisma simplifica el acceso a la base y las migraciones
-- Interfaz limpia: un solo endpoint `/message` maneja todo
+- Modular architecture (NestJS with separate services)
+- Use of standard HTTP, ideal for REST integrations
+- PostgreSQL allows scalability and complex queries
+- Supabase facilitates the use of managed PostgreSQL with extensions like `pgvector`, fundamental for semantic searches with embeddings
+- Prisma simplifies database access and migrations
+- Clean interface: a single `/message` endpoint handles everything
 
-### 1.4 Métricas sugeridas
+### 1.4 Suggested Metrics
 
-- **Tasa de conversión:** consultas de productos / carritos creados
-- **Tiempo medio de respuesta** del agente IA (de mensaje a respuesta)
-- **Errores de stock:** porcentaje de solicitudes con falta de stock
+- **Conversion rate:** product queries / carts created
+- **Average response time** of the AI agent (from message to response)
+- **Stock errors:** percentage of requests with insufficient stock
 
 ---
 
-## 2. Instrucciones de Ejecución
+## 2. Execution Instructions
 
-### 2.1 Requisitos
+### 2.1 Requirements
 
 - Node.js 18+
 - PostgreSQL (Supabase + pgvector)
-- API Key de OpenAI
+- OpenAI API Key
 
-### 2.2 Setup del entorno
+### 2.2 Environment Setup
 
 ```bash
-# 1. Variables de entorno
+# 1. Environment variables
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 
-# 2. Configurar .env
+# 2. Configure .env
 # backend/.env
-DATABASE_URL=postgresql://postgres:[TU_PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://postgres:[YOUR_PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres
 OPENAI_API_KEY=sk-...
 PORT=3001
 
 # frontend/.env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
 
-# 3. Instalar dependencias y preparar datos
+# 3. Install dependencies and prepare data
 cd backend
 npm install
 npx prisma generate
-npm run setup   # Crea base, carga productos, genera embeddings
+npm run setup   # Creates database, loads products, generates embeddings
 
-# 4. Ejecutar frontend y backend (en terminales separadas)
+# 4. Run frontend and backend (in separate terminals)
 cd backend && npm run start:dev
 cd frontend && npm install && npm run dev
 ```
 
 ---
 
-### 2.3 Esquema de Base de Datos
+### 2.3 Database Schema
 
-La base de datos fue modelada con Prisma ORM y alojada en Supabase para aprovechar extensiones como `pgvector`.
+The database was modeled with Prisma ORM and hosted on Supabase to take advantage of extensions like `pgvector`.
 
-| Tabla        | Campos clave                                                                   |
+| Table        | Key Fields                                                                     |
 | ------------ | ------------------------------------------------------------------------------ |
-| `products`   | `id`, `name`, `description`, `price`, `stock`, `embedding` _(vector opcional)_ |
+| `products`   | `id`, `name`, `description`, `price`, `stock`, `embedding` _(optional vector)_ |
 | `carts`      | `id`, `created_at`, `updated_at`                                               |
 | `cart_items` | `id`, `cart_id` (FK), `product_id` (FK), `qty`                                 |
 
-> Índices agregados a `name` y `description` para búsquedas más eficientes.  
-> Se incluyó el campo `embedding` (vector) en el modelo `Product` para habilitar búsquedas semánticas mediante embeddings generados por OpenAI. Este campo requiere la extensión `pgvector`, disponible en Supabase.
-> Las relaciones están definidas con `@relation` y las columnas se mapean a `snake_case` mediante `@@map` para alinearse al estilo SQL convencional.
+> Indexes added to `name` and `description` for more efficient searches.  
+> The `embedding` field (vector) was included in the `Product` model to enable semantic searches through embeddings generated by OpenAI. This field requires the `pgvector` extension, available in Supabase.
+> Relationships are defined with `@relation` and columns are mapped to `snake_case` via `@@map` to align with conventional SQL style.
 
-## 3. Documentación de la API
+## 3. API Documentation
 
 ### GET /products
 
-- **Descripción:** Lista productos, permite buscar con `?q=`.
-- **Parámetros query:** `q` (opcional, string)
-- **Respuesta (200):**
+- **Description:** Lists products, allows searching with `?q=`.
+- **Query parameters:** `q` (optional, string)
+- **Response (200):**
 
 ```json
-[{ "id": 1, "name": "Pantalón Verde", "price": 25.5, "stock": 12 }]
+[{ "id": 1, "name": "Green Pants", "price": 25.5, "stock": 12 }]
 ```
 
-- **Errores:** 404 Not Found 500 error interno
+- **Errors:** 404 Not Found 500 internal error
 
 ---
 
 ### GET /products/:id
 
-- **Descripción:** Devuelve un producto por ID
-- **Parámetros path:** `id` (número)
-- **Respuesta (200):**
+- **Description:** Returns a product by ID
+- **Path parameters:** `id` (number)
+- **Response (200):**
 
 ```json
-{ "id": 1, "name": "Pantalón Verde", "price": 25.5, "stock": 12 }
+{ "id": 1, "name": "Green Pants", "price": 25.5, "stock": 12 }
 ```
 
-- **Errores:** 404 si no existe
+- **Errors:** 404 if not exists
 
 ---
 
 ### POST /carts
 
-- **Descripción:** Crea carrito con productos
+- **Description:** Creates cart with products
 - **Body:**
 
 ```json
 { "items": [{ "product_id": 1, "qty": 2 }] }
 ```
 
-- **Respuesta (201):** carrito creado
-- **Errores:** 400 (vacío), 404 (producto no existe), 422 (sin stock)
+- **Response (201):** created cart
+- **Errors:** 400 (empty), 404 (product not exists), 422 (no stock)
 
 ---
 
 ### PATCH /carts/\:id
 
-- **Descripción:** Modifica un carrito existente
-- **Parámetros path:** `id` del carrito
-- **Body:** igual al POST
-- **Respuesta (200):** carrito actualizado
-- **Errores:** 400, 404, 422 (stock insuficiente)
+- **Description:** Modifies an existing cart
+- **Path parameters:** `id` of the cart
+- **Body:** same as POST
+- **Response (200):** updated cart
+- **Errors:** 400, 404, 422 (insufficient stock)
 
 ---
 
-> Demo online:
+> Online demo:
 >
 > - Frontend: [https://desafio-tecnico-cse-laburen-com.vercel.app/](https://desafio-tecnico-cse-laburen-com.vercel.app/)
 > - Backend: [https://desafio-tecnico-cse-laburen-com.onrender.com](https://desafio-tecnico-cse-laburen-com.onrender.com)
-> - WhatsApp (Twilio sandbox): enviá el mensaje **join feed-individual** al número **+1 415 523 8886** desde tu WhatsApp para unirte. Luego podés interactuar con el agente normalmente (por ejemplo: “Quiero ver pantalones”).
+> - WhatsApp (Twilio sandbox): send the message **join feed-individual** to the number **+1 415 523 8886** from your WhatsApp to join. Then you can interact with the agent normally (for example: "I want to see pants").

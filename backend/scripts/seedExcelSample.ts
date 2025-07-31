@@ -10,7 +10,7 @@ async function main() {
     throw new Error('No se encontró el archivo products.xlsx');
   }
 
-  console.log(`📄 Cargando productos desde: ${filePath}`);
+  console.log(`📄 Loading products from: ${filePath}`);
 
   const rows = await readXlsxFile(filePath);
 
@@ -41,12 +41,12 @@ async function main() {
     skipDuplicates: true,
   });
 
-  console.log(`✅ Se insertaron ${mappedProducts.length} productos`);
+  console.log(`✅ ${mappedProducts.length} products inserted`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error al cargar los productos:', e);
+    console.error('❌ Error loading products:', e);
   })
   .finally(async () => {
     await prisma.$disconnect();

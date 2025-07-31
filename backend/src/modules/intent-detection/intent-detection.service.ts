@@ -16,11 +16,11 @@ export class IntentDetectionService {
     history: ChatMessage[] = [],
   ): Promise<{ name: IntentName; query?: string | null }> {
     const system =
-      `Responde SOLO con un JSON plano con los campos "intent" y "query".\n\n` +
-      `NO uses comillas triples, bloques de código, ni markdown. Solo la respuesta JSON directa.\n\n` +
-      `Las intenciones válidas son:\n` +
+      `Respond ONLY with a plain JSON with fields "intent" and "query".\n\n` +
+      `DO NOT use triple quotes, code blocks, or markdown. Only direct JSON response.\n\n` +
+      `Valid intentions are:\n` +
       `${INTENT_DESCRIPTIONS.map((i) => `- "${i.name}": ${i.description}`).join('\n')}\n\n` +
-      `Si no entiendes la intención, usa "${IntentName.Fallback}" y deja query en null.`;
+      `If you don't understand the intention, use "${IntentName.Fallback}" and leave query as null.`;
 
     let raw: string;
     try {
@@ -30,7 +30,7 @@ export class IntentDetectionService {
         { role: 'user', content: text },
       ]);
     } catch (err) {
-      console.error('❌ Error en detectIntent:', err.message || err);
+      console.error('❌ Error in detectIntent:', err.message || err);
       return { name: IntentName.Fallback, query: null };
     }
     try {
@@ -45,7 +45,7 @@ export class IntentDetectionService {
   }
 
   async extractQuery(text: string, history: ChatMessage[] = []): Promise<string | null> {
-    const system = `Si el mensaje menciona un tipo de prenda, talla, color, categoría o descripción relevante (como "camiseta", "talla L", "color negro", "algo casual", "prenda ligera"), responde solo con esas palabras clave para búsqueda. Si no hay nada útil para filtrar productos, responde con null.`;
+    const system = `If the message mentions a type of clothing, size, color, category or relevant description (like "shirt", "size L", "black color", "something casual", "light clothing"), respond only with those keywords for search. If there's nothing useful to filter products, respond with null.`;
 
     const result = await this.openaiService.askChat([
       { role: 'system', content: system },
@@ -72,28 +72,28 @@ export class IntentDetectionService {
       ? cartItems
           .map(
             (item, i) =>
-              `${i + 1}. ID: ${item.product_id}, Nombre: "${item.name}", Cantidad actual: ${item.qty}`,
+              `${i + 1}. ID: ${item.product_id}, Name: "${item.name}", Current quantity: ${item.qty}`,
           )
           .join('\n')
       : null;
 
     const system = `
-    Eres un asistente de compras dentro de un sistema que espera únicamente respuestas en formato JSON.
+    You are a shopping assistant within a system that expects only JSON responses.
 
-    Tu tarea es identificar qué productos y cantidades el usuario quiere agregar o modificar en su carrito.
+    Your task is to identify which products and quantities the user wants to add or modify in their cart.
 
     ${
       itemsContext
-        ? `Esta es la lista actual de productos en el carrito:\n${itemsContext}`
-        : `Tienes acceso a una lista de productos previamente mostrados al usuario (desde el historial).`
+        ? `This is the current list of products in the cart:\n${itemsContext}`
+        : `You have access to a list of products previously shown to the user (from history).`
     }
 
-    Responde siempre con un array JSON usando el siguiente formato:
-    [ { "product_id": <ID>, "qty": <cantidad> } ]
+    Always respond with a JSON array using the following format:
+    [ { "product_id": <ID>, "qty": <quantity> } ]
 
-    Si no se puede interpretar ningún producto válido, responde con un array vacío: []
+    If no valid product can be interpreted, respond with an empty array: []
 
-    NO incluyas explicaciones, saludos ni ningún otro texto fuera del JSON.
+    DO NOT include explanations, greetings or any other text outside the JSON.
   `.trim();
 
     const raw = await this.openaiService.askChat([
@@ -105,7 +105,7 @@ export class IntentDetectionService {
     try {
       return JSON.parse(raw);
     } catch {
-      console.error('❌ JSON malformado en extractCartItems');
+      console.error('❌ JSON malformed in extractCartItems');
       return [];
     }
   }
@@ -115,10 +115,10 @@ export class IntentDetectionService {
     history: ChatMessage[] = [],
   ): Promise<ExtractedCartInfo | null> {
     const system =
-      `Eres un asistente que debe identificar el número de carrito mencionado por el usuario.\n\n` +
-      `Si el usuario indica un número de carrito explícitamente (por ejemplo "carrito 3" o "carrito tres"), responde solo con ese número.\n` +
-      `Si no lo dice pero en el historial hay un mensaje del asistente que menciona "el número de carrito generado es X", utiliza ese número.\n` +
-      `Si no puedes inferir ningún número válido, responde con la palabra null.`;
+      `You are an assistant that must identify the cart number mentioned by the user.\n\n` +
+      `If the user explicitly indicates a cart number (e.g., "cart 3" or "cart three"), respond only with that number.\n` +
+      `If they don't say it but there's a message from the assistant in the history mentioning "the generated cart number is X", use that number.\n` +
+      `If you cannot infer any valid number, respond with the word null.`;
 
     const raw = await this.openaiService.askChat([
       { role: 'system', content: system },

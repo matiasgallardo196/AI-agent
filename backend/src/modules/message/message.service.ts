@@ -80,11 +80,11 @@ export class MessageService {
       const pending = this.sessionManager.getPendingAction(sessionId);
       if (pending === 'adjust_stock_and_create_cart' && this.isAffirmative(text)) {
         intent = { name: IntentName.CreateCart };
-        context.ajustarStock = true;
+        context.adjustStock = true;
         this.sessionManager.clearPendingAction(sessionId);
       } else if (pending === 'adjust_stock_and_update_cart' && this.isAffirmative(text)) {
         intent = { name: IntentName.UpdateCart };
-        context.ajustarStock = true;
+        context.adjustStock = true;
         this.sessionManager.clearPendingAction(sessionId);
       }
     }

@@ -16,7 +16,7 @@ export function createUpdateCartHandler(
     text: string,
     sessionId: string | undefined,
     history: ChatMessage[],
-    ctx?: { ajustarStock?: boolean },
+    ctx?: { adjustStock?: boolean },
   ) {
     const cartInfo = await intentDetectionService.extractCartInfo(text, history);
 
@@ -41,7 +41,7 @@ export function createUpdateCartHandler(
     let cart;
     try {
       cart = await cartsService.updateCartItems(cartInfo.id, items);
-      if ('errors' in cart && ctx?.ajustarStock) {
+      if ('errors' in cart && ctx?.adjustStock) {
         const adjusted = cartsService.adjustItemsForStock(
           items,
           'errors' in cart ? cart.errors : [],

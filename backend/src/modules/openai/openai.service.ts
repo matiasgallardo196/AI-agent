@@ -13,7 +13,7 @@ export class OpenAiService {
 
   constructor() {
     if (!this.apiKey) {
-      throw new Error('OPENAI_API_KEY no definido');
+      throw new Error('OPENAI_API_KEY not defined');
     }
     this.client = new OpenAI({
       apiKey: this.apiKey,
@@ -36,13 +36,13 @@ export class OpenAiService {
       const content = choice?.message?.content;
 
       if (!content) {
-        throw new Error('Respuesta inválida del modelo: content vacío o nulo');
+        throw new Error('Invalid model response: empty or null content');
       }
 
       return content.trim();
     } catch (err) {
-      console.error('❌ Error en askChat:', err.message || err);
-      return 'Hubo un problema técnico al contactar al asistente. Probá nuevamente en unos segundos.';
+      console.error('❌ Error in askChat:', err.message || err);
+      return 'There was a technical problem contacting the assistant. Please try again in a few seconds.';
     }
   }
 
@@ -63,7 +63,7 @@ export class OpenAiService {
       );
       return response;
     } catch (err) {
-      console.error('❌ Error en rephraseForUser:', err.message || err);
+      console.error('❌ Error in rephraseForUser:', err.message || err);
       return Array.isArray(params.data)
         ? params.data.map((p) => p.name).join(', ')
         : JSON.stringify(params.data);

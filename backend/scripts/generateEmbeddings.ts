@@ -8,11 +8,11 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 async function main() {
   const products = await prisma.product.findMany();
 
-  console.log(`📦 Total de productos encontrados: ${products.length}`);
+  console.log(`📦 Total products found: ${products.length}`);
 
   for (const product of products) {
     try {
-      console.log(`⏳ Generando embedding para: ${product.name}`);
+      console.log(`⏳ Generating embedding for: ${product.name}`);
       const input = `${product.name}. ${product.description}`;
 
       const embeddingRes = await openai.embeddings.create({
@@ -28,13 +28,13 @@ async function main() {
         product.id,
       );
 
-      console.log(`✅ Guardado: ${product.name}`);
+      console.log(`✅ Saved: ${product.name}`);
     } catch (error) {
-      console.error(`❌ Error en ${product.name}:`, error.message || error);
+      console.error(`❌ Error in ${product.name}:`, error.message || error);
     }
   }
 
-  console.log('🏁 Embeddings regenerados para todos los productos');
+  console.log('🏁 Embeddings regenerated for all products');
 }
 
 main();

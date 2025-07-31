@@ -35,7 +35,7 @@ export function createGetProductsHandler(
 
       sessionManager.addMessage(sessionId, {
         role: 'assistant',
-        content: `Aquí tienes una lista de productos disponibles:\n\n${naturalContent}`,
+        content: `Here's a list of available products:\n\n${naturalContent}`,
       });
     }
 

@@ -16,18 +16,18 @@ export const VALID_INTENTS = [
 export const INTENT_DESCRIPTIONS: { name: IntentName; description: string }[] = [
   {
     name: IntentName.GetProducts,
-    description: 'Muestra una lista de productos. Se puede buscar por nombre o descripción.',
+    description: 'Shows a list of products. Can search by name or description.',
   },
   {
     name: IntentName.GetProduct,
-    description: 'Devuelve el detalle de un producto específico (por nombre o ID).',
+    description: 'Returns details of a specific product (by name or ID).',
   },
   {
     name: IntentName.CreateCart,
-    description: 'Crea un nuevo carrito con los productos indicados.',
+    description: 'Creates a new cart with the specified products.',
   },
   {
     name: IntentName.UpdateCart,
-    description: 'Modifica un carrito existente: cambia cantidades o agrega/saca productos.',
+    description: 'Modifies an existing cart: changes quantities or adds/removes products.',
   },
 ];

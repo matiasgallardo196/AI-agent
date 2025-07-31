@@ -23,38 +23,38 @@ export class PromptBuilder {
 
     switch (intention) {
       case 'get_products':
-        return `Eres un agente comercial amable. El usuario pidió ver productos. Reformula esta información de forma clara y atractiva:\n\n${summary}`;
+        return `You are a friendly sales agent. The user asked to see products. Rephrase this information clearly and attractively:\n\n${summary}`;
 
       case 'create_cart':
         if ('errors' in cleaned && Array.isArray(cleaned.errors)) {
-          const errores = cleaned.errors
+          const errors = cleaned.errors
             .map((err, i) => {
-              return `${i + 1}. ${err.name}: pediste ${err.cantidadSolicitada}, pero solo hay ${err.stockDisponible} disponibles.`;
+              return `${i + 1}. ${err.name}: you requested ${err.requestedQuantity}, but only ${err.stockAvailable} are available.`;
             })
             .join('\n');
 
           return `
-      Eres un agente comercial llamado Cristian. Estás ayudando al usuario dentro de un sistema de compras por chat.
+      You are a sales agent named Christian. You are helping the user within a chat shopping system.
 
-      No se pudo crear el carrito porque hay productos sin stock suficiente:
+      The cart could not be created because there are products with insufficient stock:
 
-      ${errores}
+      ${errors}
 
-      ¿Querés ajustar las cantidades para continuar con la creación del carrito?
+      Would you like to adjust the quantities to continue with cart creation?
 
-      Podés responder "sí" para usar la cantidad máxima disponible o indicar manualmente las nuevas cantidades.
+      You can respond "yes" to use the maximum available quantity or manually indicate the new quantities.
 
-      Estoy aquí para ayudarte 😊
+      I'm here to help you 😊
     `.trim();
         }
 
         if (!Array.isArray(cleaned.items)) {
-          return `No se pudo crear el carrito porque no se encontraron productos válidos.`;
+          return `The cart could not be created because no valid products were found.`;
         }
 
         const productLines = cleaned.items
           .map((item, i) => {
-            const name = item.product?.name || `Producto desconocido (ID: ${item.productId})`;
+            const name = item.product?.name || `Unknown product (ID: ${item.productId})`;
             const price = item.product?.price != null ? item.product.price : null;
             const desc = item.product?.description || '';
             const priceFormatted = price != null ? `$${price.toLocaleString()}` : '';
@@ -68,55 +68,55 @@ export class PromptBuilder {
         }, 0);
 
         const totalLine =
-          total > 0 ? `\n\nTotal estimado de la compra: $${total.toLocaleString()}` : '';
+          total > 0 ? `\n\nEstimated purchase total: $${total.toLocaleString()}` : '';
 
         return `
-    Eres un agente comercial amigable llamado Cristian. Estás ayudando al usuario dentro de un sistema de compras por chat.
+    You are a friendly sales agent named Christian. You are helping the user within a chat shopping system.
 
-    El usuario acaba de crear un carrito con los siguientes productos:
+    The user just created a cart with the following products:
 
     ${productLines}${totalLine}
 
-    El número de carrito generado es: ${cleaned.id}.
+    The generated cart number is: ${cleaned.id}.
 
-    Confirma de forma amistosa la creación del carrito, incluyendo los nombres, cantidades y el total estimado.
-    Aclara que si más adelante desea modificar su carrito, puede hacerlo indicando el número de ID ${cleaned.id}.
-    Evita lenguaje técnico y hablá como un asesor humano, manteniendo el tono cálido y servicial de Cristian.
+    Confirm the cart creation in a friendly way, including the names, quantities and estimated total.
+    Clarify that if they want to modify their cart later, they can do so by indicating the ID number ${cleaned.id}.
+    Avoid technical language and speak like a human advisor, maintaining Christian's warm and helpful tone.
   `.trim();
 
       case 'update_cart':
         if (userMessage === 'no_cart_found') {
           return `
-            No encontré un carrito activo para modificar.
-            ¿Podés indicarme el número de carrito que querés editar?
-            Por ejemplo: "el 3" o "quiero modificar el carrito 5".
+            I couldn't find an active cart to modify.
+            Could you tell me the cart number you want to edit?
+            For example: "the 3" or "I want to modify cart 5".
             `.trim();
         }
 
         if (userMessage === 'no_items_detected') {
           return `
-           No pude identificar qué productos querés modificar en tu carrito.
-            ¿Podés decirme qué prendas querés cambiar y en qué cantidades?
-            Por ejemplo: "3 camisetas negras talla M" o "quiero agregar 2 pantalones deportivos".
+           I couldn't identify what products you want to modify in your cart.
+            Could you tell me what items you want to change and in what quantities?
+            For example: "3 black shirts size M" or "I want to add 2 sports pants".
             `.trim();
         }
 
-        return `El usuario modificó su carrito. Los productos ahora son:\n\n${summary}\nConfirma los cambios de forma clara.`;
+        return `The user modified their cart. The products are now:\n\n${summary}\nConfirm the changes clearly.`;
 
       case 'fallback':
       default:
-        return `Eres un agente comercial amigable llamado Cristian. Estás dentro de un sistema que solo permite ayudarte a:
+        return `You are a friendly sales agent named Christian. You are within a system that only allows you to help with:
 
-                    1. Ver productos disponibles.
-                    2. Consultar detalles de un producto.
-                    3. Crear un carrito de compras.
-                    4. Modificar un carrito existente.
+                    1. View available products.
+                    2. Check product details.
+                    3. Create a shopping cart.
+                    4. Modify an existing cart.
 
-                    El usuario escribió: "${userMessage}"
+                    The user wrote: "${userMessage}"
 
-                    No puedes ayudar con pagos, envíos, datos personales, ni realizar compras reales.
+                    You cannot help with payments, shipping, personal data, or make real purchases.
 
-                    Formula una pregunta amistosa y clara para redirigir al usuario hacia una de las funciones que sí puedes realizar. Si el mensaje es muy confuso, intenta guiarlo con ejemplos como: "¿Querés que te muestre los productos disponibles?" o "¿Estás buscando algo específico?".
+                    Formulate a friendly and clear question to redirect the user towards one of the functions you can perform. If the message is very confusing, try to guide them with examples like: "Would you like me to show you the available products?" or "Are you looking for something specific?".
                       `.trim();
     }
   }

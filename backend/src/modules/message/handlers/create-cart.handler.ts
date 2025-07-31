@@ -16,13 +16,13 @@ export function createCreateCartHandler(
     text: string,
     sessionId: string | undefined,
     history: ChatMessage[],
-    ctx?: { ajustarStock?: boolean },
+    ctx?: { adjustStock?: boolean },
   ) {
     const items = await intentDetectionService.extractCartItems(text, history);
     let cart;
     try {
       cart = await cartsService.createCart(items);
-      if ('errors' in cart && ctx?.ajustarStock) {
+      if ('errors' in cart && ctx?.adjustStock) {
         const adjusted = cartsService.adjustItemsForStock(
           items,
           'errors' in cart ? cart.errors : [],

@@ -32,15 +32,15 @@ export class CartsService {
     const existingIds = new Set(products.map((p) => p.id));
     const notFound = productIds.filter((id) => !existingIds.has(id));
     if (notFound.length > 0) {
-      throw new NotFoundException(`Productos no encontrados: ${notFound.join(', ')}`);
+      throw new NotFoundException(`Products not found: ${notFound.join(', ')}`);
     }
 
     const errors = items.reduce<
       {
         productId: number;
         name: string;
-        stockDisponible: number;
-        cantidadSolicitada: number;
+        stockAvailable: number;
+        requestedQuantity: number;
       }[]
     >((acc, item) => {
       const product = products.find((p) => p.id === item.product_id);
@@ -48,8 +48,8 @@ export class CartsService {
         acc.push({
           productId: product.id,
           name: product.name,
-          stockDisponible: product.stock,
-          cantidadSolicitada: item.qty,
+          stockAvailable: product.stock,
+          requestedQuantity: item.qty,
         });
       }
       return acc;
@@ -60,17 +60,17 @@ export class CartsService {
 
   adjustItemsForStock(
     items: { product_id: number; qty: number }[],
-    errors: { productId: number; stockDisponible: number }[],
+    errors: { productId: number; stockAvailable: number }[],
   ) {
     return items.map((item) => {
       const err = errors.find((e) => e.productId === item.product_id);
-      return err ? { product_id: item.product_id, qty: err.stockDisponible } : item;
+      return err ? { product_id: item.product_id, qty: err.stockAvailable } : item;
     });
   }
 
   async createCart(items: { product_id: number; qty: number }[]) {
     if (items.length === 0) {
-      throw new BadRequestException('No se puede crear un carrito sin ítems');
+      throw new BadRequestException('Cannot create a cart without items');
     }
 
     const { errors } = await this.validateProductsAndStock(items);
@@ -84,7 +84,7 @@ export class CartsService {
 
   async updateCartItems(cartId: number, items: { product_id: number; qty: number }[]) {
     if (items.length === 0) {
-      throw new BadRequestException('No se puede actualizar con una lista vacía');
+      throw new BadRequestException('Cannot update with an empty list');
     }
 
     const currentItems = await this.cartsRepository.getCartItems(cartId);
