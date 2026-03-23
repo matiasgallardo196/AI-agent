@@ -34,6 +34,7 @@ RUN npm ci --omit=dev && npx prisma generate
 
 # Copy generated dist folder from builder stage
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/scripts ./scripts
 
 # Change ownership of all output files to the pre-existing 'node' non-root user
 RUN chown -R node:node /app
