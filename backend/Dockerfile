@@ -40,7 +40,7 @@ USER node
 # Add Healthcheck (ensure container is active)
 # We test connection using standard node http request 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001', (r) => {if(r.statusCode !== 200 && r.statusCode !== 404) process.exit(1)}).on('error', () => process.exit(1))"
+  CMD node -e "const req = require('http').get('http://localhost:3001', (res) => { const ok = res.statusCode === 200 || res.statusCode === 404; res.resume(); res.on('end', () => process.exit(ok ? 0 : 1)); }); req.on('error', () => process.exit(1));"
 
 EXPOSE 3001
 

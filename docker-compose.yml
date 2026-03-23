@@ -33,7 +33,7 @@ services:
       - DATABASE_URL=postgresql://postgres:password@db:5432/ai_agent?schema=public
     env_file:
       - ./backend/.env
-    command: bash -c "npx prisma generate && npx prisma db push && npm run start:dev"
+    command: bash -c "npm ci && npx prisma generate && npx prisma db push && npm run start:dev"
     depends_on:
       db:
         condition: service_healthy
