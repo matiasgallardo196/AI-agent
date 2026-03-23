@@ -21,6 +21,10 @@ FROM node:20-slim AS production
 
 WORKDIR /app
 
+
+# Install OpenSSL to prevent Prisma missing libssl warnings
+RUN apt-get update -y && apt-get install -y openssl
+
 # Copy package files and prisma schema
 COPY package*.json ./
 COPY prisma ./prisma/
