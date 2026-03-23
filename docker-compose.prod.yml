@@ -9,9 +9,18 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
       POSTGRES_DB: ${DB_NAME:-ai_agent}
-
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-ai_agent}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
   backend:
     build:
@@ -22,14 +31,15 @@ services:
     ports:
       - '3001:3001'
     environment:
-      # Automatically point to the Coolify db container
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-ai_agent}?schema=public
-      
-      # Environment variables that should be set in Coolify UI
-      # Coolify automatically injects all variables defined in its dashboard,
-      # so we don't need to list OPENAI_*, TWILIO_*, etc. here manually.
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
 
 volumes:
   pgdata_prod:
