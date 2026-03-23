@@ -25,8 +25,9 @@ WORKDIR /app
 # Install OpenSSL to prevent Prisma missing libssl warnings
 RUN apt-get update -y && apt-get install -y openssl
 
-# Copy package files and prisma schema
+# Copy package files, prisma schema, and tsconfig
 COPY package*.json ./
+COPY tsconfig*.json ./
 COPY prisma ./prisma/
 
 # Install only production dependencies and generate client
